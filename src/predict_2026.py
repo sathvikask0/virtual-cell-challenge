@@ -134,6 +134,34 @@ def recenter(changes, genes_idx, gamma=1.0):
     return out
 
 
+def line_common(genes, line, exclude=()):
+    """A line's typical change: mean lfc (and log total ratio) over its knockdowns, skipping
+    `exclude`, on the given genes (0 where the line doesn't measure a gene)."""
+    d = np.load(ROOT / "data/lines" / f"{line}.npz")
+    gidx = {g: i for i, g in enumerate(genes)}
+    keep = np.array([g in gidx for g in d["genes"]])
+    rows = ~np.isin(d["targets"], list(exclude))
+    counts, ctrl = d["counts"][rows][:, keep], d["ctrl"][keep]
+    share = counts / counts.sum(1, keepdims=True)
+    lfc = np.log((share + EPS) / (ctrl / ctrl.sum() + EPS))
+    out = np.zeros(len(genes))
+    out[[gidx[g] for g in d["genes"][keep]]] = lfc.mean(0)
+    return out, float(np.log(counts.sum(1) / ctrl.sum()).mean())
+
+
+def add_common(changes, genes_idx, common, weight=1.0):
+    """Add weight x a line's typical change to every target (own gene's drop kept) and use
+    that line's typical total-count change."""
+    lfc_c, r_c = common
+    out = {}
+    for t, (lfc, r) in changes.items():
+        new = lfc + weight * lfc_c
+        if t in genes_idx:
+            new[genes_idx[t]] = lfc[genes_idx[t]]
+        out[t] = (new, weight * r_c)
+    return out
+
+
 def context_stats(X):
     """Control share, per-cell totals and per-gene overdispersion from control cells X."""
     X = sp.csr_matrix(X, dtype=np.float64)
