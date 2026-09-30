@@ -185,7 +185,8 @@ Val (50 held-out genes), best CV setting per model:
 - New calibration and sampler experiments build on Exp 5/6 without replacing the original predictor.
 - Details, results, scoring-space correction, and commands: [CALIBRATION.md](CALIBRATION.md).
 - HepG2 expression shrinkage 0.25 is rejected: official overall 0.009691 versus 0.170889 at 0.5.
-- Correlated-noise and depth-aware gamma-Poisson candidates are being evaluated with the official scorer.
+- At shrinkage 0.5, correlated noise scores 0.182908 and depth-aware gamma-Poisson 0.184269 on HepG2, versus 0.170889 original. Gains need seed confirmation.
+- Testing depth-aware noise on Claude's stronger alpha=1 baseline; a calibrated submission packager's small pilot passes Arc's dry-run.
 
 ### Exp 6: local copy of the official scorer
 - Goal: try ideas without spending leaderboard submissions (2/day).
@@ -227,13 +228,24 @@ Shrinking vs not (local official scorer; HepG2 on the official scale, H1 relativ
 | + denoise per gene (k=4) | 0.109 | 0.130 |
 | + weight per knockdown (kt=3) | 0.122 | — |
 | no shrink (alpha 0.75) | 0.282 | |
-| **no shrink (alpha 1)** | **0.374** | running |
+| **no shrink (alpha 1)** | **0.374** | 0.178 |
 | alpha 1.25 | 0.347 | |
 | alpha 1.5 | 0.291 | |
-| alpha 2 | 0.117 | running |
+| alpha 2 | 0.117 | 0.069 |
 
 - Any shrinking hurts: mse is already at its floor of 0, so smaller changes gain nothing there and only
   lose significant, correctly-signed genes (fid, reach). Past alpha 1, nmae (error on the size of changes) collapses.
 - Generated no-change cells vs real controls: 4 genes falsely called changed (real vs real: 0), so the cell
   generator is not the problem.
+
+Leaderboard check of alpha 1 (entry 9Uk2yux4d7EyfOtcjN7Y, 2026-09-30):
+
+| submission | overall | pds | mse | nmae | fid | reach | jac | rank |
+|---|---|---|---|---|---|---|---|---|
+| alpha 0.5 | 0.097 | 0.506 | 0 | 0.070 | −0.088 | 0.124 | −0.031 | 544 |
+| alpha 1 | 0.092 | 0.509 | 0 | −0.048 | −0.026 | 0.137 | −0.018 | 556 |
+
+- No gain on the leaderboard, as H1 predicted (0.178 vs 0.177), not HepG2 (0.374 vs 0.171).
+  The components moved the way H1 showed: direction scores up, nmae down. H1 is the local test to trust.
+- The leaderboard keeps only a team's newest submission, so it now shows 0.092.
 

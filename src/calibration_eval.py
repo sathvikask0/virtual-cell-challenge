@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--sampler", choices=["gamma", "lognormal", "factor"], default="gamma")
     parser.add_argument("--factor-strength", type=float, default=.5)
     parser.add_argument("--depth-aware", action="store_true")
+    parser.add_argument("--effect-space", choices=["original", "logbulk"], default="original")
+    parser.add_argument("--k562-source", choices=["original", "core", "batch"], default="original")
     parser.add_argument("--score-only", action="store_true")
     parser.add_argument("--bulk-only", action="store_true",
                         help="Fast official MSE/PDS only; no overall score")
@@ -46,7 +48,32 @@ def main():
         counts = real.obs["target"].value_counts()
         real.file.close()
         targets = [t for t in counts.index if t != CTRL]
-        src = source_changes(genes, [s for s in SOURCES if s != args.line])
+        sources = [s for s in SOURCES if s != args.line]
+        if args.k562_source != "original":
+            sources = [f"k562_{args.k562_source}" if s == "k562" else s for s in sources]
+        src = source_changes(genes, sources)
+        logbulk_effects = {}
+        if args.effect_space == "logbulk":
+            # Transfer differences in the expression comparator used by the scorer.
+            # Include only requested targets and retain source measurement masks.
+            wanted = set(targets)
+            for source in sources:
+                with np.load(ROOT / "data/lines" / f"{source}.npz") as data:
+                    positions = {g: i for i, g in enumerate(genes)}
+                    mask = np.array([g in positions for g in data["genes"]])
+                    cols = np.array([positions[g] for g in data["genes"][mask]])
+                    control = data["ctrl"][mask]
+                    control_log = np.log1p(50000 * control / control.sum())
+                    for row, target in enumerate(data["targets"]):
+                        if target not in wanted:
+                            continue
+                        counts_row = data["counts"][row, mask]
+                        delta = np.log1p(50000 * counts_row / counts_row.sum()) - control_log
+                        if target not in logbulk_effects:
+                            logbulk_effects[target] = (np.zeros(len(genes)), np.zeros(len(genes)))
+                        summed, measured = logbulk_effects[target]
+                        summed[cols] += delta
+                        measured[cols] += 1
         gidx = {g: i for i, g in enumerate(genes)}
         ctrl = ad.read_h5ad(out / "ctrl_input.h5ad").X
         share, totals, phi = (depth_aware_stats if args.depth_aware else context_stats)(ctrl)
@@ -57,7 +84,12 @@ def main():
                 ["alpha", "total_alpha", "own_alpha", "expression_gate", "mode"]}
         for t in targets:
             lfc, ltr = calibrated_change(t, gidx, src, share, **opts)
-            s = np.maximum((share + EPS) * np.exp(lfc) - EPS, 0)
+            if args.effect_space == "logbulk" and t in logbulk_effects and args.mode == "transfer":
+                summed, measured = logbulk_effects[t]
+                delta = summed / np.maximum(measured, 1)
+                s = np.expm1(np.maximum(np.log1p(50000 * share) + args.alpha * delta, 0))
+            else:
+                s = np.maximum((share + EPS) * np.exp(lfc) - EPS, 0)
             if args.sampler == "gamma":
                 block = sample_cells(s / s.sum(), totals, phi, ltr, rng, n=int(counts[t]))
             else:

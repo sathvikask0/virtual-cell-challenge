@@ -60,8 +60,42 @@ depth-aware noise improves the variance ratio from 1.041 to 0.994 and detected
 genes from 8,681 to 8,751 (real: 8,742). Factor noise improves gene-pair agreement
 from -0.005 to 0.256, but does not fix marginal variance by itself.
 
-Full HepG2 factor-noise and depth-aware-noise evaluations are in progress.
-No new leaderboard upload yet. Nine behavior and simulation tests pass, including
+Full official HepG2 results at expression/total shrinkage 0.5:
+
+| Sampler | Overall | PDS scaled | Raw normalized MSE (lower better) |
+|---|---:|---:|---:|
+| Original gamma-Poisson | 0.170889 | 0.825507 | 0.932454 |
+| Factor Poisson-lognormal | 0.182908 | 0.853001 | 0.916680 |
+| Depth-aware gamma-Poisson | 0.184269 | 0.902273 | 0.874819 |
+
+The improvements are about the same size as the previously observed seed
+variation (0.015); they are promising, not confirmed submission improvements.
+An independent lognormal bulk-only run gives MSE 0.921736 and raw PDS 0.784027,
+versus factor lognormal 0.916680 and 0.781029. Therefore the correlated variant's
+small bulk gains cannot all be attributed to its correlations.
+
+Concurrent experiments from Claude found alpha=1 gives a much larger official
+HepG2 gain: 0.373523. The next comparisons apply depth-aware noise at alpha=1,
+total-alpha=1, and repeat the original alpha=1 model with a second seed.
+
+Those comparisons have now finished: original alpha=1 scores 0.373523 (seed 0)
+and 0.389126 (seed 1), whereas depth-aware alpha=1 scores 0.360574 (seed 0).
+Depth-aware noise is **not selected** for the next submission: matching control
+moments better did not improve the stronger model's full score. The original
+no-shrink model is the current baseline. A small gain at alpha=0.5 is insufficient
+evidence to replace it.
+
+User reports Claude submitted the next candidate and requests no more submissions
+today (2026-09-30). Remaining work is local only. New H1 bulk-only comparisons
+reuse the existing predictions without duplicating the expensive DE computation.
+
+The new `calibration_submission.py` reuses the original streaming packager and
+supports calibrated shrinkage, all samplers, and depth-aware noise. A two-target,
+three-context pilot passed `vcc prep --dry-run` (2,400 integer-count cells, 18,533
+genes, correct context coverage and gene order). This pilot disables verification
+of the complete official target list; a full candidate must enable that check.
+
+No new leaderboard upload by Codex yet. Nine behavior and simulation tests pass, including
 recovery of dispersion under variable depth and the correlated sampler's expected
 means, variances, and covariance.
 
@@ -77,6 +111,10 @@ Run from the repository root:
 .venv/bin/python src/calibration_eval.py hepg2 a025 --alpha .25 --total-alpha .5
 .venv/bin/python src/calibration_eval.py hepg2 factor_a05 --alpha .5 --sampler factor
 .venv/bin/python src/calibration_eval.py hepg2 depth_a05 --alpha .5 --depth-aware
+.venv/bin/python src/calibration_eval.py hepg2 depth_a1 --alpha 1 --total-alpha 1 --depth-aware
+.venv/bin/python src/calibration_eval.py hepg2 gamma_a1_s1 --alpha 1 --total-alpha 1 --seed 1
+.venv/bin/python src/calibration_submission.py codex_depth_pilot --depth-aware --pilot-targets 2
+.venv/bin/vcc prep data/submissions/codex_depth_pilot.h5ad --dry-run --no-verify-targets --genes data/vcc/controls/gene_names.csv
 ```
 
 Prediction files are never silently overwritten. To rerun scoring on an existing
