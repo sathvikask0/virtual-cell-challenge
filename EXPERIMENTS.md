@@ -181,6 +181,12 @@ Val (50 held-out genes), best CV setting per model:
 
 ## Current
 
+### Codex transfer-calibration experiments
+- New calibration and sampler experiments build on Exp 5/6 without replacing the original predictor.
+- Details, results, scoring-space correction, and commands: [CALIBRATION.md](CALIBRATION.md).
+- HepG2 expression shrinkage 0.25 is rejected: official overall 0.009691 versus 0.170889 at 0.5.
+- Correlated-noise and depth-aware gamma-Poisson candidates are being evaluated with the official scorer.
+
 ### Exp 6: local copy of the official scorer
 - Goal: try ideas without spending leaderboard submissions (2/day).
 - `src/local_eval.py`: a held-out public line plays a 2026 context. 150 random targets, up to 200 cells each.
@@ -212,4 +218,22 @@ Finding: for the 2026 targets, K562's profiles are mostly noise.
   than K562 alone (H1 0.38 vs 0.40, Jurkat 0.45 vs 0.61).
 - Trying (branch `exp/calibration`): weight each line's copied change for a knockdown by s/(s+kt),
   s = number of clearly changed genes, so near-empty profiles shrink to ~0.
+
+Shrinking vs not (local official scorer; HepG2 on the official scale, H1 relative to baseline only):
+
+| method | HepG2 | H1 |
+|---|---|---|
+| transfer, shrink 0.5 (leaderboard 0.097) | 0.171 | 0.177 |
+| + denoise per gene (k=4) | 0.109 | 0.130 |
+| + weight per knockdown (kt=3) | 0.122 | — |
+| no shrink (alpha 0.75) | 0.282 | |
+| **no shrink (alpha 1)** | **0.374** | running |
+| alpha 1.25 | 0.347 | |
+| alpha 1.5 | 0.291 | |
+| alpha 2 | 0.117 | running |
+
+- Any shrinking hurts: mse is already at its floor of 0, so smaller changes gain nothing there and only
+  lose significant, correctly-signed genes (fid, reach). Past alpha 1, nmae (error on the size of changes) collapses.
+- Generated no-change cells vs real controls: 4 genes falsely called changed (real vs real: 0), so the cell
+  generator is not the problem.
 
