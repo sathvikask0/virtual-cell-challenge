@@ -16,11 +16,9 @@ The "remove the shared part" idea (γ = 0) did **not** help on H1:
 
 ## Running now (H1, ~45–60 min)
 
-- `a1_phi0`: α = 1 with no extra cell-to-cell spread in the sampled cells (φ = 0, plain Poisson).
-  With less noise, the scorer's significance test catches more of our predicted changes.
-- `a1_seed1`: α = 1 with a different random seed, to measure how much H1 moves from luck alone.
-  All the differences so far (0.173–0.178) may just be noise.
-- Dropped: scaling the change by how strongly the target gene is expressed. H1 shows no link (corr 0.08).
+- `hc1_a1` and `hc1_a05`: the new model (H1 typical response + K562 specific part), at α = 1 and α = 0.5.
+
+Done: φ = 0 scored 0.179 and a different seed scored 0.177, against 0.178. On H1 the seed moves the score by only ~0.001, so all our older ideas were ties.
 
 ## Most promising idea: use H1's typical response (next run: `hc`)
 

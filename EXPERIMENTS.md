@@ -260,3 +260,18 @@ Removing the part shared by all targets (gamma 0: subtract the panel-average cha
 | alpha 1, gamma 0 | 0.176 | 0.66 | −0.16 | 0.45 | 0.02 | 0.08 |
 
 - No gain; within seed noise (~0.015). The shared part neither helps nor hurts discrimination. Not submitted.
+
+Sampler spread and seed noise on H1 (alpha 1, relative to baseline):
+
+| method | H1 | pds | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|
+| alpha 1 (seed 0) | 0.178 | 0.66 | −0.16 | 0.47 | 0.02 | 0.08 |
+| alpha 1, seed 1 | 0.177 | 0.65 | −0.16 | 0.46 | 0.02 | 0.08 |
+| alpha 1, no extra spread (phi 0, Poisson) | 0.179 | 0.65 | −0.15 | 0.48 | 0.01 | 0.09 |
+
+- On H1 the seed moves the score by only ~0.001 (HepG2: ~0.015). Plain Poisson makes no real difference. Not submitted.
+
+Finding: the public lines barely cover the 2026 targets. K562 covers 272 of 300, H1 25, RPE1/HepG2/Jurkat 0.
+The 2026 contexts' control cells correlate with H1 at 0.50/0.63/0.71 (A/B/C) and with K562 at 0.33/0.22/0.31.
+So the typical knockdown response we copy comes from the wrong cell type. Testing H1's typical response
+plus K562's target-specific part (math in [MODEL.md](MODEL.md)).
