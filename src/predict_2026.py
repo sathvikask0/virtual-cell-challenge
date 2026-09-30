@@ -8,6 +8,10 @@ Model ("transfer", tested in cross_line.py):
      Optional denoising (K): first weight each line's change for gene g by z^2 / (z^2 + K),
      z = the change in counts / its noise (noise from src/noise.py), so changes that don't
      stand out from noise are pulled to zero.
+     Optional per-knockdown weighting (KT): weight a line's whole change for a target by
+     s / (s + KT), s = number of genes changed by more than 5 noise units (|z| > 5), not
+     counting the switched-off gene itself. For the 2026 targets in K562 the median s is 1,
+     so most of those profiles are close to pure noise.
   3. The switched-off gene itself always drops by the typical amount (not shrunk).
   4. Apply to each context's own control share and total counts.
   5. Draw 400 new cells per target: each cell's total is drawn from the context's control
@@ -45,9 +49,10 @@ EPS = 1e-5
 SEED = 0
 
 
-def source_changes(genes, sources=SOURCES, k=None):
+def source_changes(genes, sources=SOURCES, k=None, kt=None):
     """Per target: summed lfc and number of lines measuring each gene, on the given genes.
-    With k, each lfc is first weighted by z^2 / (z^2 + k) (see module docstring)."""
+    With k, each lfc is first weighted by z^2 / (z^2 + k); with kt, each target's whole
+    lfc by s / (s + kt) (see module docstring)."""
     gidx = {g: i for i, g in enumerate(genes)}
     lfc_sum, lfc_n, ltr, own = {}, {}, {}, []
     line_means = []
@@ -60,13 +65,22 @@ def source_changes(genes, sources=SOURCES, k=None):
         ctrl_share = ctrl / ctrl.sum()
         lfc = np.log((share + EPS) / (ctrl_share + EPS))
         r = np.log(counts.sum(1) / ctrl.sum())
-        if k is not None:
+        local_all = {g: i for i, g in enumerate(d["genes"][keep])}
+        if k is not None or kt is not None:
             nz = np.load(ROOT / "data/lines" / f"{name}_noise.npz")
             nidx = {g: i for i, g in enumerate(nz["genes"])}
             var = nz["var"][[nidx[g] for g in d["genes"][keep]]]
             diff = counts - ctrl[None] * np.exp(r)[:, None]
             z2 = diff ** 2 / (np.maximum(var, 1e-6)[None] * (1 / d["n"][:, None] + 1 / d["ctrl_n"]))
-            lfc = lfc * z2 / (z2 + k)
+            if k is not None:
+                lfc = lfc * z2 / (z2 + k)
+            if kt is not None:
+                z2 = z2.copy()
+                for i, t in enumerate(d["targets"]):
+                    if t in local_all:
+                        z2[i, local_all[t]] = 0  # the switched-off gene itself doesn't count
+                strength = (z2 > 25).sum(1)
+                lfc = lfc * (strength / (strength + kt))[:, None]
         local = {g: i for i, g in enumerate(d["genes"][keep])}
         full_mean = np.zeros(len(genes))
         full_mean[cols] = lfc.mean(0)

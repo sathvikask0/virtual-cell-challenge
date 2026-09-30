@@ -202,3 +202,14 @@ HepG2 (150 targets), official scale (0 = baseline, 1 = replicate):
 - Sampling seed alone moves the overall by ~0.015.
 - Denoising hurts on HepG2 (changes copied from strong-effect lines). Waiting on H1, the more 2026-like case.
 
+Finding: for the 2026 targets, K562's profiles are mostly noise.
+- Genes changed by more than 5 noise units, per knockdown (switched-off gene not counted), median [90th pct]:
+  K562 all 1 [15], K562 2026 targets 1 [8]; RPE1 20 [268]; HepG2 4 [172]; Jurkat 5 [59];
+  H1 309 [3049], H1 2026 targets 566 [3133] (H1 has ~1,000 cells per knockdown vs ~100–150 in K562,
+  and its noise is per-cell only, without batch effects, so H1 counts are inflated).
+- Common response (average over all knockdowns) is only partly shared between lines: corr 0.3–0.9
+  (H1 vs others ~0.3–0.4). The average of the other lines predicts a line's common response no better
+  than K562 alone (H1 0.38 vs 0.40, Jurkat 0.45 vs 0.61).
+- Trying (branch `exp/calibration`): weight each line's copied change for a knockdown by s/(s+kt),
+  s = number of clearly changed genes, so near-empty profiles shrink to ~0.
+

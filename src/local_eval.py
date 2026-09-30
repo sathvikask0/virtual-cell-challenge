@@ -11,7 +11,8 @@ Commands:
                                             write data/local_eval/LINE/{real.h5ad, ctrl_input.h5ad},
                                             build the official baseline (0 end of the scale) and,
                                             with --bundle, the replicate (1 end; >2 h on a laptop)
-  python src/local_eval.py predict LINE NAME [ALPHA] [K]
+  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT]
+                                            (k, kt: denoising options of predict_2026.py)
                                             write a transfer prediction and score it
 
 LINE: h1 (VCC 2025, per-cell) or hepg2 / jurkat (Nadig 2025, per-cell).
@@ -93,13 +94,13 @@ def setup(line):
               "--preset", "vcc2026", "--force")
 
 
-def predict(line, name, alpha, k=None):
+def predict(line, name, alpha=0.5, k=None, kt=None):
     out = ROOT / "data/local_eval" / line
     real = ad.read_h5ad(out / "real.h5ad", backed="r")
     genes = np.array(real.var_names, dtype=str)
     counts = real.obs["target"].value_counts()
     targets = [t for t in counts.index if t != CTRL]
-    src = source_changes(genes, [s for s in SOURCES if s != line], k)
+    src = source_changes(genes, [s for s in SOURCES if s != line], k, kt)
     gidx = {g: i for i, g in enumerate(genes)}
     ctrl_X = ad.read_h5ad(out / "ctrl_input.h5ad").X
     share, totals, phi = context_stats(ctrl_X)
@@ -119,7 +120,7 @@ def predict(line, name, alpha, k=None):
                       var=pd.DataFrame(index=genes))
     p = out / f"pred_{name}.h5ad"
     pred.write_h5ad(p)
-    print(f"{line}/{name}: alpha={alpha}, k={k}, {seen}/{len(targets)} targets seen in other lines")
+    print(f"{line}/{name}: alpha={alpha}, k={k}, kt={kt}, {seen}/{len(targets)} targets seen in other lines")
     cell_eval("run", "-ap", p, "-ar", out / "real.h5ad", "--preset", "vcc2026",
               "-o", out / f"run_{name}")
     # with the full bundle: official scale (baseline 0, replicate 1); without: baseline only
@@ -136,5 +137,5 @@ if __name__ == "__main__":
     if cmd == "setup":
         setup(line)
     else:
-        predict(line, sys.argv[3], float(sys.argv[4]) if len(sys.argv) > 4 else 0.5,
-                float(sys.argv[5]) if len(sys.argv) > 5 else None)
+        opts = dict(a.split("=") for a in sys.argv[4:])
+        predict(line, sys.argv[3], **{key: float(v) for key, v in opts.items()})
