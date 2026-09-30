@@ -50,8 +50,9 @@ def score(pred_counts, true_counts, ctrl_counts):
     mae = np.abs(pred_counts - true_counts).mean(1)
     total_err = np.abs(pred_counts.sum(1) / true_counts.sum(1) - 1)
 
-    # dist[i, j] = L1 distance between prediction i and true row j
-    dist = np.abs(pred_counts[:, None, :] - true_counts[None, :, :]).sum(2)
+    # dist[i, j] = L1 distance between prediction i and true row j (in chunks to save memory)
+    dist = np.concatenate([np.abs(pred_counts[i:i + 16, None, :] - true_counts[None]).sum(2)
+                           for i in range(0, len(pred_counts), 16)])
     own = np.diag(dist)
     # ties count as half, so identical predictions for everyone score 0.5
     rank = (dist < own[:, None]).sum(1) + 0.5 * ((dist == own[:, None]).sum(1) - 1)

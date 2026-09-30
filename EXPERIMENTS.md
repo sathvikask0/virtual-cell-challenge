@@ -88,8 +88,45 @@ Val (50 held-out genes), best CV setting per model:
 - Discrimination is still close to random (0.49). Settings that tell genes apart better (low alpha, small k)
   predict each gene's change worse, so predictions stay close to the average.
 
+### Finding: the 2026 task is different from our H1 setup
+- 2026 has no training set. Validation = 3 hidden cell lines (A, B, C) in `data/vcc/controls/`:
+  18,400 control cells each (raw integer counts, 18,533 genes) + the same 300 genes to switch off in all three.
+  Final test = 3 other cell lines (D, E, F), released Oct 22.
+- Only 25 of the 300 targets were switched off in H1 (13 train, 4 val, 8 test). All 300 are measured genes in H1.
+- 18,077 of the 18,533 genes overlap with H1's 18,080.
+- Median total counts per control cell is ~20k in all three lines (10th–90th pct ~9k–34k), vs ~50k in H1.
+- So our H1 val (new genes, same cell line) does not test the real task (mostly new genes, new cell line).
+
 ---
 
 ## Current
 
-Nothing running.
+### Exp 4: practice on unseen cell lines (leave one cell line out)
+- Goal: copy the 2026 setup. Fit on some cell lines, predict another from its control cells only.
+- Data (public, free):
+  - K562 genome-wide screen (Replogle 2022, averaged file): 9,866 targets
+  - RPE1 essential screen (Replogle 2022, averaged file): 2,393 targets
+  - HepG2 and Jurkat essential screens (Nadig 2025, per-cell files, ~15 GB): downloading
+  - H1 (VCC 2025): 300 targets
+- `src/lines.py` puts every line in one format; `src/cross_line.py` runs the test.
+- Scored on the 6,633 genes measured in every line (the Replogle files keep only ~8k genes).
+- 272 of the 300 2026 targets were switched off in K562. None were in the essential screens.
+- Predictors: control (no change), mean (average change), mean+drop (switched-off gene itself drops),
+  transfer (reuse the same gene's change from another line).
+
+First run (H1, K562, RPE1), same metrics as before; "seen" = gene switched off in a training line:
+
+| held out | targets | predictor | pearson_delta | mae | discrimination |
+|---|---|---|---|---|---|
+| h1 | seen (280) | control | 0.00 | 0.402 | 0.500 |
+| h1 | seen (280) | mean+drop | 0.09 | 0.606 | 0.492 |
+| h1 | seen (280) | **transfer** | **0.21** | 0.745 | **0.353** |
+| k562 | seen (300) | mean+drop | −0.18 | 0.145 | 0.498 |
+| k562 | seen (300) | **transfer** | **0.15** | 0.251 | **0.335** |
+| rpe1 | seen (300) | mean+drop | 0.08 | 0.277 | 0.499 |
+| rpe1 | seen (300) | **transfer** | **0.16** | 0.300 | **0.435** |
+| k562 | unseen (300) | mean+drop | 0.01 | 0.106 | 0.498 |
+
+- So far: reusing the same gene's change from another line clearly helps correlation and discrimination.
+- But it makes mae worse, and the average change is worse than "no change" on mae in every line.
+  Changes copied across lines carry a lot of noise.
