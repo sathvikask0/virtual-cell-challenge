@@ -167,4 +167,6 @@ Val (50 held-out genes), best CV setting per model:
 - Arc's `vcc prep` needs ~33 GB RAM for a full submission, so the script writes and packages the file
   in chunks itself. A 6-gene pilot passed `vcc prep --dry-run` and the .vcc archive check.
 - Scoring: 6 metrics per context, 0 = Arc's mean-response baseline for that context. 2 submissions/day.
-- Status: building the file.
+- File built and checked: 360,000 cells x 18,533 genes, 400 cells per target per context, whole counts,
+  targets match the official list, ~5.4k nonzeros per cell (real controls ~6.0k), 3.0 GB .vcc.
+- Status: waiting to submit.
