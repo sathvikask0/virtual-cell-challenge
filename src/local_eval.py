@@ -11,8 +11,8 @@ Commands:
                                             write data/local_eval/LINE/{real.h5ad, ctrl_input.h5ad},
                                             build the official baseline (0 end of the scale) and,
                                             with --bundle, the replicate (1 end; >2 h on a laptop)
-  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT]
-                                            (k, kt: denoising options of predict_2026.py)
+  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1]
+                                            (k, kt, gamma: options of predict_2026.py)
                                             write a transfer prediction and score it
 
 LINE: h1 (VCC 2025, per-cell) or hepg2 / jurkat (Nadig 2025, per-cell).
@@ -27,7 +27,8 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 
-from predict_2026 import SOURCES, context_stats, sample_cells, source_changes, target_change
+from predict_2026 import (SOURCES, context_stats, recenter, sample_cells, source_changes,
+                          target_change)
 
 ROOT = Path(__file__).resolve().parent.parent
 BIN = ROOT / ".venv/bin"
@@ -94,7 +95,7 @@ def setup(line):
               "--preset", "vcc2026", "--force")
 
 
-def predict(line, name, alpha=0.5, k=None, kt=None):
+def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0):
     out = ROOT / "data/local_eval" / line
     real = ad.read_h5ad(out / "real.h5ad", backed="r")
     genes = np.array(real.var_names, dtype=str)
@@ -109,8 +110,10 @@ def predict(line, name, alpha=0.5, k=None, kt=None):
     # the scorer needs control rows in the prediction file too, but scores against the
     # real held-out controls (control_source: real), so these input controls are not used
     blocks, labels = [sp.csr_matrix(ctrl_X, dtype=np.float32)], [CTRL] * ctrl_X.shape[0]
+    changes = {t: target_change(t, gidx, src, alpha) for t in targets}
+    changes = recenter(changes, gidx, gamma)
     for t in targets:
-        lfc, r = target_change(t, gidx, src, alpha)
+        lfc, r = changes[t]
         s = np.clip((share + eps) * np.exp(lfc) - eps, 0, None)
         blocks.append(sample_cells(s / s.sum(), totals, phi, r, rng, n=int(counts[t])))
         labels += [t] * int(counts[t])

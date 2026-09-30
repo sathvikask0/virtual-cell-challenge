@@ -17,6 +17,7 @@ from correlated_noise import fit_factors, sample_lognormal
 from local_eval import ROOT, CTRL, cell_eval
 from predict_2026 import EPS, SOURCES, context_stats, sample_cells, source_changes
 from sampling_stats import depth_aware_stats
+from prediction_io import write_prediction_blocks
 
 
 def main():
@@ -38,6 +39,8 @@ def main():
     parser.add_argument("--bulk-only", action="store_true",
                         help="Fast official MSE/PDS only; no overall score")
     args = parser.parse_args()
+    if args.effect_space == "logbulk" and (args.own_alpha != 1. or args.expression_gate != 0.):
+        parser.error("logbulk currently transfers the source's own-gene effect; own-alpha and expression-gate are supported only in original space")
     out = ROOT / "data/local_eval" / args.line
     path = out / f"pred_codex_{args.name}.h5ad"
     if not args.score_only:
@@ -79,32 +82,31 @@ def main():
         share, totals, phi = (depth_aware_stats if args.depth_aware else context_stats)(ctrl)
         factors = fit_factors(ctrl, phi) if args.sampler == "factor" else None
         rng = np.random.default_rng(args.seed)
-        blocks, labels = [sp.csr_matrix(ctrl, dtype=np.float32)], [CTRL] * ctrl.shape[0]
+        labels = [CTRL] * ctrl.shape[0]
+        for t in targets:
+            labels.extend([t] * int(counts[t]))
         opts = {k: getattr(args, k) for k in
                 ["alpha", "total_alpha", "own_alpha", "expression_gate", "mode"]}
-        for t in targets:
-            lfc, ltr = calibrated_change(t, gidx, src, share, **opts)
-            if args.effect_space == "logbulk" and t in logbulk_effects and args.mode == "transfer":
-                summed, measured = logbulk_effects[t]
-                delta = summed / np.maximum(measured, 1)
-                s = np.expm1(np.maximum(np.log1p(50000 * share) + args.alpha * delta, 0))
-            else:
-                s = np.maximum((share + EPS) * np.exp(lfc) - EPS, 0)
-            if args.sampler == "gamma":
-                block = sample_cells(s / s.sum(), totals, phi, ltr, rng, n=int(counts[t]))
-            else:
-                block = sample_lognormal(s / s.sum(), totals, phi, ltr, rng, n=int(counts[t]),
-                                        factors=factors, strength=args.factor_strength)
-            blocks.append(block)
-            labels.extend([t] * int(counts[t]))
-        pred = ad.AnnData(X=sp.vstack(blocks).tocsr(),
-                          obs=pd.DataFrame({"target": labels}, index=np.arange(len(labels)).astype(str)),
-                          var=pd.DataFrame(index=genes))
-        pred.write_h5ad(path)
+        def blocks():
+            yield sp.csr_matrix(ctrl, dtype=np.float32)
+            for t in targets:
+                lfc, ltr = calibrated_change(t, gidx, src, share, **opts)
+                if args.effect_space == "logbulk" and t in logbulk_effects and args.mode == "transfer":
+                    summed, measured = logbulk_effects[t]
+                    delta = summed / np.maximum(measured, 1)
+                    s = np.expm1(np.maximum(np.log1p(50000 * share) + args.alpha * delta, 0))
+                else:
+                    s = np.maximum((share + EPS) * np.exp(lfc) - EPS, 0)
+                if args.sampler == "gamma":
+                    yield sample_cells(s / s.sum(), totals, phi, ltr, rng, n=int(counts[t]))
+                else:
+                    yield sample_lognormal(s / s.sum(), totals, phi, ltr, rng, n=int(counts[t]),
+                                          factors=factors, strength=args.factor_strength)
+        write_prediction_blocks(path, genes, labels, blocks())
         (out / f"config_codex_{args.name}.json").write_text(json.dumps(vars(args), indent=2))
         print(f"Wrote {path.name}: {opts}", flush=True)
         # Do not retain multi-GB source profiles while the scorer subprocess runs.
-        del src, pred, blocks, ctrl, factors
+        del src, blocks, ctrl, factors, logbulk_effects
         gc.collect()
     run = out / f"run_codex_{args.name}{'_bulk' if args.bulk_only else ''}"
     extra = (["--set", "metrics=[pds_cosine,expr_mse_unbiased_capped_norm]"]

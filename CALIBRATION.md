@@ -89,6 +89,49 @@ User reports Claude submitted the next candidate and requests no more submission
 today (2026-09-30). Remaining work is local only. New H1 bulk-only comparisons
 reuse the existing predictions without duplicating the expensive DE computation.
 
+H1 official bulk-only results: alpha=0.5 gives raw normalized MSE 1.378686 and
+raw PDS 0.826890; alpha=1 gives MSE 2.705667 and PDS 0.830112. The full H1
+baseline-relative scores later completed at 0.176660 and 0.178456 respectively.
+These are not on HepG2's replicate scale, so do not compare their numeric levels
+across lines. Alpha=2 drops the H1 baseline-relative score to 0.069161.
+
+## Further local experiments
+
+`learned_transfer.py` fits a 32-component effect basis and a ridge correction
+using ordered source/destination pairs for the same knockdown. Each outer test
+line is excluded from both PCA and regression fitting. The context variant has
+133 input features; the ablation retains 34 (source effect and target expression).
+Both variants hurt discrimination on H1, HepG2, and Jurkat. At correction strength
+0.5, the context model's proxy PDS changes from direct-copy 0.895 to 0.857 on H1,
+0.764 to 0.687 on HepG2, and 0.818 to 0.790 on Jurkat. Mean error improves slightly
+on the cancer lines, but these models are not selected for submission. All these
+are shared-gene, uncorrected mean-expression proxies, not overall scores.
+
+An official HepG2 evaluation of `--effect-space logbulk` is in progress. It copies
+differences in `log1p(50000 * share)` directly rather than EPS-regularized share
+ratios. In this variant the target gene's own effect is also copied from sources;
+independent own-gene scaling and expression gating are currently unsupported.
+
+The authors' normalized K562 pseudobulk file (file 35773217) was downloaded and
+its MD5 verified as `a3dfaa94ea8724217f5ecb1e14a5f0c8`. It has the same 8,248 raw
+gene columns as the raw bulk file (8,246 unique symbols); the 66 GB single-cell
+file is not needed to access this processed alternative.
+
+`build_k562_sources.py` writes separate sources, preserving `k562.npz`:
+
+- `k562_core.npz`: original target averages, using the authors' 514 vetted control
+  guides, excluding 71 other control guides.
+- `k562_batch.npz`: authors' gemgroup-normalized effects mapped to a count proxy
+  with scales fitted to those vetted controls. This conversion is experimental,
+  not observed counts. The 6,881 nonfinite normalized entries are treated as
+  unavailable effect estimates, not extreme gene changes.
+
+Source provenance and processing diagnostics are saved in
+`data/calibration/k562_sources.json`. H1 and HepG2 batch-source bulk-only
+evaluations are in progress. The local prediction writer now streams cell blocks
+to HDF5, avoiding retention and duplication of entire prediction matrices.
+Thirteen behavior and numerical tests pass.
+
 The new `calibration_submission.py` reuses the original streaming packager and
 supports calibrated shrinkage, all samplers, and depth-aware noise. A two-target,
 three-context pilot passed `vcc prep --dry-run` (2,400 integer-count cells, 18,533

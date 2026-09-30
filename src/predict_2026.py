@@ -13,6 +13,9 @@ Model ("transfer", tested in cross_line.py):
      counting the switched-off gene itself. For the 2026 targets in K562 the median s is 1,
      so most of those profiles are close to pure noise.
   3. The switched-off gene itself always drops by the typical amount (not shrunk).
+     Optional GAMMA: keep only GAMMA x the panel's average change (the part shared by all
+     targets, mostly the source line's generic response) plus each target's own deviation
+     from it. GAMMA = 1 changes nothing; 0 removes the shared part.
   4. Apply to each context's own control share and total counts.
   5. Draw 400 new cells per target: each cell's total is drawn from the context's control
      totals, then counts ~ gamma-Poisson around the predicted share, with per-gene
@@ -114,6 +117,21 @@ def target_change(t, genes_idx, src, alpha=ALPHA):
     if t in genes_idx:
         lfc[genes_idx[t]] = own_drop
     return lfc, r
+
+
+def recenter(changes, genes_idx, gamma=1.0):
+    """Scale the panel's shared change by gamma: lfc_t -> lfc_t - (1 - gamma) * mean_t(lfc_t).
+    The switched-off gene's own drop is left as it was."""
+    if gamma == 1.0:
+        return changes
+    shared = np.mean([lfc for lfc, _ in changes.values()], axis=0)
+    out = {}
+    for t, (lfc, r) in changes.items():
+        new = lfc - (1 - gamma) * shared
+        if t in genes_idx:
+            new[genes_idx[t]] = lfc[genes_idx[t]]
+        out[t] = (new, r)
+    return out
 
 
 def context_stats(X):
