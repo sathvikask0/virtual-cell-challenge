@@ -42,12 +42,12 @@ EPS = 1e-5
 SEED = 0
 
 
-def source_changes(genes):
-    """Per target: summed lfc and number of lines measuring each gene, on the 2026 genes."""
+def source_changes(genes, sources=SOURCES):
+    """Per target: summed lfc and number of lines measuring each gene, on the given genes."""
     gidx = {g: i for i, g in enumerate(genes)}
     lfc_sum, lfc_n, ltr, own = {}, {}, {}, []
     line_means = []
-    for name in SOURCES:
+    for name in sources:
         d = np.load(ROOT / "data/lines" / f"{name}.npz")
         keep = np.array([g in gidx for g in d["genes"]])
         cols = np.array([gidx[g] for g in d["genes"][keep]])
@@ -78,22 +78,22 @@ def source_changes(genes):
     return lfc_sum, lfc_n, ltr, mean_lfc, mean_ltr, float(np.median(own))
 
 
-def target_change(t, genes_idx, src):
+def target_change(t, genes_idx, src, alpha=ALPHA):
     lfc_sum, lfc_n, ltr, mean_lfc, mean_ltr, own_drop = src
     if t in lfc_sum:
         lfc = np.where(lfc_n[t] > 0, lfc_sum[t] / np.maximum(lfc_n[t], 1), 0)
         r = np.mean(ltr[t])
     else:
         lfc, r = mean_lfc.copy(), mean_ltr
-    lfc, r = ALPHA * lfc, ALPHA * r
-    lfc[genes_idx[t]] = own_drop
+    lfc, r = alpha * lfc, alpha * r
+    if t in genes_idx:
+        lfc[genes_idx[t]] = own_drop
     return lfc, r
 
 
-def context_stats(c, genes):
-    a = ad.read_h5ad(CTRL_DIR / f"context_{c}.h5ad")
-    assert list(a.var_names) == list(genes)
-    X = sp.csr_matrix(a.X, dtype=np.float64)
+def context_stats(X):
+    """Control share, per-cell totals and per-gene overdispersion from control cells X."""
+    X = sp.csr_matrix(X, dtype=np.float64)
     totals = np.asarray(X.sum(1)).ravel()
     share = np.asarray(X.sum(0)).ravel() / totals.sum()
     # per-gene overdispersion on depth-normalized counts: var = m + phi * m^2
@@ -105,13 +105,13 @@ def context_stats(c, genes):
     return share, totals, phi
 
 
-def sample_cells(share, totals, phi, ltr, rng):
-    lib = rng.choice(totals, CELLS) * np.exp(ltr)
+def sample_cells(share, totals, phi, ltr, rng, n=CELLS):
+    lib = rng.choice(totals, n) * np.exp(ltr)
     mu = lib[:, None] * share[None, :]
     over = phi > 0
     g = np.ones_like(mu)
     shape = 1 / phi[over]
-    g[:, over] = rng.gamma(shape, 1 / shape, size=(CELLS, over.sum()))
+    g[:, over] = rng.gamma(shape, 1 / shape, size=(n, over.sum()))
     return sp.csr_matrix(rng.poisson(mu * g).astype(np.float32))
 
 
@@ -175,7 +175,9 @@ def main():
 
     def blocks():
         for c in CONTEXTS:
-            share, totals, phi = context_stats(c, genes)
+            a = ad.read_h5ad(CTRL_DIR / f"context_{c}.h5ad")
+            assert list(a.var_names) == list(genes)
+            share, totals, phi = context_stats(a.X)
             for k, t in enumerate(targets):
                 lfc, r = target_change(t, gidx, src)
                 s = np.clip((share + EPS) * np.exp(lfc) - EPS, 0, None)

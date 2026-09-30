@@ -143,10 +143,6 @@ Val (50 held-out genes), best CV setting per model:
 - The "seen" genes here are mostly essential genes with strong effects. The 2026 targets are not essential,
   so their changes are probably weaker; these numbers are likely optimistic for 2026.
 
----
-
-## Current
-
 ### Exp 5: first 2026 leaderboard submission (transfer, shrunk by half)
 - `src/predict_2026.py` → `data/submissions/transfer_a05.vcc`
 - For each of the 300 targets: average its change over the public lines where it was switched off
@@ -169,4 +165,26 @@ Val (50 held-out genes), best CV setting per model:
 - Scoring: 6 metrics per context, 0 = Arc's mean-response baseline for that context. 2 submissions/day.
 - File built and checked: 360,000 cells x 18,533 genes, 400 cells per target per context, whole counts,
   targets match the official list, ~5.4k nonzeros per cell (real controls ~6.0k), 3.0 GB .vcc.
-- Status: waiting to submit.
+- Submitted 2026-09-30 as `ask_sathvik` (entry wgm3kKK92ecNULbKTbtn). Upload 20 min, scoring a few min.
+
+| overall | pds | mse | nmae | fid | reach | jac | rank |
+|---|---|---|---|---|---|---|---|
+| **0.097** | 0.506 | 0.000 | 0.070 | −0.088 | 0.124 | −0.031 | 544 |
+
+- Scores are scaled: 0 = Arc's average-change baseline (built from the true answers), 1 = a replicate experiment.
+- Result: above the baseline overall, almost all of it from telling genes apart (pds 0.51).
+  Expression error (mse) is at its floor of 0; the direction of significant genes (fid, jac) is worse
+  than the baseline.
+- For reference, a public write-up of the same idea without shrinking scored 0.046 (pds 0.41, fid −0.18).
+
+---
+
+## Current
+
+### Exp 6: local copy of the official scorer
+- Goal: try ideas without spending leaderboard submissions (2/day).
+- `src/local_eval.py`: a held-out public line plays a 2026 context. 150 random targets, up to 200 cells each.
+  Its control cells are split in half: one half is the model's input, the other goes with the answers.
+- Scored with Arc's scorer (`cell-eval2`, preset `vcc2026`): official baseline = 0, replicate = 1.
+- Lines: HepG2 (building), then H1.
+
