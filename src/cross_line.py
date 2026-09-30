@@ -71,12 +71,12 @@ def fit(train):
 
 
 def predict(kind, m, targets, ctrl_share, ctrl_total):
+    if kind == "control":  # exact, so rounding noise doesn't show up as a correlation
+        return np.repeat((ctrl_share * ctrl_total)[None], len(targets), axis=0)
     rows = []
     for t in targets:
         lfc, ltr = m["mean_lfc"].copy(), m["mean_ltr"]
-        if kind == "control":
-            lfc, ltr = np.zeros_like(lfc), 0.0
-        elif kind == "transfer" and t in m["per_target"]:
+        if kind == "transfer" and t in m["per_target"]:
             lfc = np.mean([x for x, _ in m["per_target"][t]], axis=0)
             ltr = np.mean([y for _, y in m["per_target"][t]])
         elif kind in ("mean+drop", "transfer") and t in m["gidx"]:

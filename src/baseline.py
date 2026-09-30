@@ -42,6 +42,7 @@ def load(split):
 
 def score(pred_counts, true_counts, ctrl_counts):
     p = pred_counts - ctrl_counts
+    p[np.abs(p) < 1e-9] = 0  # rounding noise is not a predicted change
     t = true_counts - ctrl_counts
     p, t = p - p.mean(1, keepdims=True), t - t.mean(1, keepdims=True)
     denom = np.linalg.norm(p, axis=1) * np.linalg.norm(t, axis=1)

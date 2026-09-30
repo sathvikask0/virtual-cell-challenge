@@ -99,34 +99,54 @@ Val (50 held-out genes), best CV setting per model:
 
 ---
 
-## Current
-
 ### Exp 4: practice on unseen cell lines (leave one cell line out)
-- Goal: copy the 2026 setup. Fit on some cell lines, predict another from its control cells only.
-- Data (public, free):
-  - K562 genome-wide screen (Replogle 2022, averaged file): 9,866 targets
-  - RPE1 essential screen (Replogle 2022, averaged file): 2,393 targets
-  - HepG2 and Jurkat essential screens (Nadig 2025, per-cell files, ~15 GB): downloading
-  - H1 (VCC 2025): 300 targets
-- `src/lines.py` puts every line in one format; `src/cross_line.py` runs the test.
-- Scored on the 6,633 genes measured in every line (the Replogle files keep only ~8k genes).
-- 272 of the 300 2026 targets were switched off in K562. None were in the essential screens.
-- Predictors: control (no change), mean (average change), mean+drop (switched-off gene itself drops),
-  transfer (reuse the same gene's change from another line).
+- Goal: copy the 2026 setup. Fit on the other cell lines, predict the held-out one from its control cells only.
+- Data (public, free), `src/lines.py` puts each in one format in `data/lines/`:
 
-First run (H1, K562, RPE1), same metrics as before; "seen" = gene switched off in a training line:
+| line | source | targets | control counts/cell |
+|---|---|---|---|
+| h1 | VCC 2025 | 300 | 57.5k |
+| k562 | Replogle 2022 genome-wide (averaged file) | 9,866 | 11.7k |
+| rpe1 | Replogle 2022 essential (averaged file) | 2,393 | 13.0k |
+| hepg2 | Nadig 2025 essential (per-cell file) | 2,393 | 19.2k |
+| jurkat | Nadig 2025 essential (per-cell file) | 2,393 | 12.5k |
+
+- 272 of the 300 2026 targets were switched off in K562. None were in the essential screens.
+- `src/cross_line.py`: scored on the 6,123 genes measured in every line (Replogle files keep only ~8k genes).
+  Changes are learned as ratios of share, since counts per cell differ ~5x between lines.
+- Predictors: control (no change), mean (average change), mean+drop (switched-off gene itself drops),
+  transfer (reuse the same gene's average change from the training lines; else mean+drop).
+- "seen" = the gene was switched off in some training line. Up to 300 random targets scored per group.
 
 | held out | targets | predictor | pearson_delta | mae | discrimination |
 |---|---|---|---|---|---|
-| h1 | seen (280) | control | 0.00 | 0.402 | 0.500 |
-| h1 | seen (280) | mean+drop | 0.09 | 0.606 | 0.492 |
-| h1 | seen (280) | **transfer** | **0.21** | 0.745 | **0.353** |
-| k562 | seen (300) | mean+drop | −0.18 | 0.145 | 0.498 |
-| k562 | seen (300) | **transfer** | **0.15** | 0.251 | **0.335** |
-| rpe1 | seen (300) | mean+drop | 0.08 | 0.277 | 0.499 |
-| rpe1 | seen (300) | **transfer** | **0.16** | 0.300 | **0.435** |
-| k562 | unseen (300) | mean+drop | 0.01 | 0.106 | 0.498 |
+| h1 | seen (280) | control | 0.00 | **0.406** | 0.500 |
+| h1 | seen (280) | mean+drop | 0.12 | 0.542 | 0.495 |
+| h1 | seen (280) | transfer | **0.22** | 0.719 | **0.361** |
+| k562 | seen (300) | control | 0.00 | **0.130** | 0.500 |
+| k562 | seen (300) | mean+drop | 0.26 | 0.135 | 0.498 |
+| k562 | seen (300) | transfer | **0.27** | 0.171 | **0.339** |
+| rpe1 | seen (300) | control | 0.00 | 0.285 | 0.500 |
+| rpe1 | seen (300) | mean+drop | 0.03 | 0.282 | 0.499 |
+| rpe1 | seen (300) | transfer | **0.24** | **0.277** | **0.409** |
+| hepg2 | seen (300) | control | 0.00 | 0.330 | 0.500 |
+| hepg2 | seen (300) | mean+drop | 0.17 | **0.318** | 0.499 |
+| hepg2 | seen (300) | transfer | **0.32** | 0.332 | **0.343** |
+| jurkat | seen (300) | control | 0.00 | 0.236 | 0.500 |
+| jurkat | seen (300) | mean+drop | 0.11 | 0.236 | 0.499 |
+| jurkat | seen (300) | transfer | **0.39** | 0.239 | **0.339** |
+| k562 | unseen (300) | control | 0.00 | **0.082** | 0.500 |
+| k562 | unseen (300) | mean+drop | 0.03 | 0.103 | 0.499 |
 
-- So far: reusing the same gene's change from another line clearly helps correlation and discrimination.
-- But it makes mae worse, and the average change is worse than "no change" on mae in every line.
-  Changes copied across lines carry a lot of noise.
+- Result: transfer is best on correlation (0.22–0.39) and discrimination (0.34–0.41) in every held-out line.
+- mae: transfer is about equal to "no change" in rpe1/hepg2/jurkat, but clearly worse in h1 and k562.
+  h1 is the most different line (stem cells, VCC measurement). 2026 uses yet another measurement (10x Flex).
+- For genes never switched off elsewhere ("unseen"), nothing beats "no change" by much.
+- The "seen" genes here are mostly essential genes with strong effects. The 2026 targets are not essential,
+  so their changes are probably weaker; these numbers are likely optimistic for 2026.
+
+---
+
+## Current
+
+Nothing running.
