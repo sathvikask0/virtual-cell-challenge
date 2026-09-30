@@ -97,8 +97,6 @@ Val (50 held-out genes), best CV setting per model:
 - Median total counts per control cell is ~20k in all three lines (10th–90th pct ~9k–34k), vs ~50k in H1.
 - So our H1 val (new genes, same cell line) does not test the real task (mostly new genes, new cell line).
 
----
-
 ### Exp 4: practice on unseen cell lines (leave one cell line out)
 - Goal: copy the 2026 setup. Fit on the other cell lines, predict the held-out one from its control cells only.
 - Data (public, free), `src/lines.py` puts each in one format in `data/lines/`:
