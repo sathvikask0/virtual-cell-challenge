@@ -5,6 +5,9 @@ Model ("transfer", tested in cross_line.py):
      cell line where it was switched off, on the genes that line measures. Genes no line
      measures get no change. Targets never switched off anywhere get the average change.
   2. Shrink the change by ALPHA (0.5 lowered error in 4 of 5 held-out lines in Exp 4).
+     Optional denoising (K): first weight each line's change for gene g by z^2 / (z^2 + K),
+     z = the change in counts / its noise (noise from src/noise.py), so changes that don't
+     stand out from noise are pulled to zero.
   3. The switched-off gene itself always drops by the typical amount (not shrunk).
   4. Apply to each context's own control share and total counts.
   5. Draw 400 new cells per target: each cell's total is drawn from the context's control
@@ -42,8 +45,9 @@ EPS = 1e-5
 SEED = 0
 
 
-def source_changes(genes, sources=SOURCES):
-    """Per target: summed lfc and number of lines measuring each gene, on the given genes."""
+def source_changes(genes, sources=SOURCES, k=None):
+    """Per target: summed lfc and number of lines measuring each gene, on the given genes.
+    With k, each lfc is first weighted by z^2 / (z^2 + k) (see module docstring)."""
     gidx = {g: i for i, g in enumerate(genes)}
     lfc_sum, lfc_n, ltr, own = {}, {}, {}, []
     line_means = []
@@ -56,6 +60,13 @@ def source_changes(genes, sources=SOURCES):
         ctrl_share = ctrl / ctrl.sum()
         lfc = np.log((share + EPS) / (ctrl_share + EPS))
         r = np.log(counts.sum(1) / ctrl.sum())
+        if k is not None:
+            nz = np.load(ROOT / "data/lines" / f"{name}_noise.npz")
+            nidx = {g: i for i, g in enumerate(nz["genes"])}
+            var = nz["var"][[nidx[g] for g in d["genes"][keep]]]
+            diff = counts - ctrl[None] * np.exp(r)[:, None]
+            z2 = diff ** 2 / (np.maximum(var, 1e-6)[None] * (1 / d["n"][:, None] + 1 / d["ctrl_n"]))
+            lfc = lfc * z2 / (z2 + k)
         local = {g: i for i, g in enumerate(d["genes"][keep])}
         full_mean = np.zeros(len(genes))
         full_mean[cols] = lfc.mean(0)

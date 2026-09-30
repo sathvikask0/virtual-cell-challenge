@@ -186,5 +186,19 @@ Val (50 held-out genes), best CV setting per model:
 - `src/local_eval.py`: a held-out public line plays a 2026 context. 150 random targets, up to 200 cells each.
   Its control cells are split in half: one half is the model's input, the other goes with the answers.
 - Scored with Arc's scorer (`cell-eval2`, preset `vcc2026`): official baseline = 0, replicate = 1.
-- Lines: HepG2 (building), then H1.
+- Lines: HepG2 done, H1 running (bigger: 18k genes, baseline alone takes >30 min).
+- The prediction file must also hold control rows; the scorer ignores them and uses the real held-out controls.
+- `src/noise.py`: per-gene noise of each line, for denoising (weight each copied change by z²/(z²+k)).
+
+HepG2 (150 targets), official scale (0 = baseline, 1 = replicate):
+
+| method | overall | pds | mse | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|---|
+| transfer, shrink 0.5 (= leaderboard 0.097) | **0.171** | 0.83 | 0 | 0.00 | 0.23 | 0.05 | −0.08 |
+| same, other sampling seed | 0.156 | 0.81 | 0 | −0.01 | 0.21 | 0.09 | −0.17 |
+| + denoise k=4 | 0.109 | 0.86 | 0 | −0.27 | 0.05 | −0.09 | 0.10 |
+
+- Local scorer runs; same pattern as the leaderboard (discrimination carries the score, mse 0).
+- Sampling seed alone moves the overall by ~0.015.
+- Denoising hurts on HepG2 (changes copied from strong-effect lines). Waiting on H1, the more 2026-like case.
 
