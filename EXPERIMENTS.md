@@ -249,3 +249,14 @@ Leaderboard check of alpha 1 (entry 9Uk2yux4d7EyfOtcjN7Y, 2026-09-30):
   The components moved the way H1 showed: direction scores up, nmae down. H1 is the local test to trust.
 - The leaderboard keeps only a team's newest submission, so it now shows 0.092.
 
+
+Removing the part shared by all targets (gamma 0: subtract the panel-average change, keep the switched-off gene's drop), H1 relative to baseline:
+
+| method | H1 | pds | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|
+| alpha 0.5 | 0.177 | | | | | |
+| alpha 0.5, gamma 0 | 0.173 | 0.64 | −0.04 | 0.35 | 0.04 | 0.05 |
+| alpha 1 | 0.178 | 0.66 | −0.16 | 0.47 | 0.02 | 0.08 |
+| alpha 1, gamma 0 | 0.176 | 0.66 | −0.16 | 0.45 | 0.02 | 0.08 |
+
+- No gain; within seed noise (~0.015). The shared part neither helps nor hurts discrimination. Not submitted.
