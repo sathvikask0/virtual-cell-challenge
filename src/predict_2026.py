@@ -26,7 +26,7 @@ writes the same slim .h5ad in chunks and packages the .vcc (tar of meta.json +
 pred.h5ad.zst) itself, matching vcc/prep.py `_write_vcc`.
 
 Output: data/submissions/{name}.vcc
-Usage: python src/predict_2026.py [name] [alpha]  (default transfer_a05, alpha ALPHA)
+Usage: python src/predict_2026.py [name] [alpha] [gamma]  (default transfer_a05, ALPHA, 1)
 """
 import io
 import json
@@ -207,6 +207,7 @@ def package(h5ad_path, vcc_path, n_obs, n_vars, nnz):
 def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "transfer_a05"
     alpha = float(sys.argv[2]) if len(sys.argv) > 2 else ALPHA
+    gamma = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
     genes = pd.read_csv(CTRL_DIR / "gene_names.csv")["gene_name"].to_numpy(str)
     targets = pd.read_csv(CTRL_DIR / "pert_counts.csv")["target_gene"].to_numpy(str)
     gidx = {g: i for i, g in enumerate(genes)}
@@ -216,6 +217,7 @@ def main():
           f"typical own drop: {np.exp(src[5]):.2f}x")
 
     rng = np.random.default_rng(SEED)
+    changes = recenter({t: target_change(t, gidx, src, alpha) for t in targets}, gidx, gamma)
 
     def blocks():
         for c in CONTEXTS:
@@ -223,7 +225,7 @@ def main():
             assert list(a.var_names) == list(genes)
             share, totals, phi = context_stats(a.X)
             for k, t in enumerate(targets):
-                lfc, r = target_change(t, gidx, src, alpha)
+                lfc, r = changes[t]
                 s = np.clip((share + EPS) * np.exp(lfc) - EPS, 0, None)
                 yield sample_cells(s / s.sum(), totals, phi, r, rng)
                 if (k + 1) % 50 == 0:
