@@ -1,0 +1,196 @@
+"""Build a 2026 submission: 300 knockdowns x 400 cells x contexts A, B, C, raw counts.
+
+Model ("transfer", tested in cross_line.py):
+  1. For each target, average its share change (lfc, see cross_line.py) over every public
+     cell line where it was switched off, on the genes that line measures. Genes no line
+     measures get no change. Targets never switched off anywhere get the average change.
+  2. Shrink the change by ALPHA (0.5 lowered error in 4 of 5 held-out lines in Exp 4).
+  3. The switched-off gene itself always drops by the typical amount (not shrunk).
+  4. Apply to each context's own control share and total counts.
+  5. Draw 400 new cells per target: each cell's total is drawn from the context's control
+     totals, then counts ~ gamma-Poisson around the predicted share, with per-gene
+     overdispersion measured on the context's controls. No control cell is copied.
+
+Arc's `vcc prep` loads the whole matrix (~33 GB for ~2e9 nonzeros), so this script
+writes the same slim .h5ad in chunks and packages the .vcc (tar of meta.json +
+pred.h5ad.zst) itself, matching vcc/prep.py `_write_vcc`.
+
+Output: data/submissions/{name}.vcc
+Usage: python src/predict_2026.py [name]  (default transfer_a05)
+"""
+import io
+import json
+import os
+import sys
+import tarfile
+from pathlib import Path
+
+import anndata as ad
+import h5py
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+import zstandard as zstd
+
+ROOT = Path(__file__).resolve().parent.parent
+CTRL_DIR = ROOT / "data/vcc/controls"
+SOURCES = ["h1", "k562", "rpe1", "hepg2", "jurkat"]
+CONTEXTS = ["A", "B", "C"]
+CELLS = 400
+ALPHA = 0.5
+EPS = 1e-5
+SEED = 0
+
+
+def source_changes(genes):
+    """Per target: summed lfc and number of lines measuring each gene, on the 2026 genes."""
+    gidx = {g: i for i, g in enumerate(genes)}
+    lfc_sum, lfc_n, ltr, own = {}, {}, {}, []
+    line_means = []
+    for name in SOURCES:
+        d = np.load(ROOT / "data/lines" / f"{name}.npz")
+        keep = np.array([g in gidx for g in d["genes"]])
+        cols = np.array([gidx[g] for g in d["genes"][keep]])
+        counts, ctrl = d["counts"][:, keep], d["ctrl"][keep]
+        share = counts / counts.sum(1, keepdims=True)
+        ctrl_share = ctrl / ctrl.sum()
+        lfc = np.log((share + EPS) / (ctrl_share + EPS))
+        r = np.log(counts.sum(1) / ctrl.sum())
+        local = {g: i for i, g in enumerate(d["genes"][keep])}
+        full_mean = np.zeros(len(genes))
+        full_mean[cols] = lfc.mean(0)
+        line_means.append((full_mean, cols, r.mean()))
+        for i, t in enumerate(d["targets"]):
+            if t not in lfc_sum:
+                lfc_sum[t], lfc_n[t], ltr[t] = np.zeros(len(genes)), np.zeros(len(genes)), []
+            lfc_sum[t][cols] += lfc[i]
+            lfc_n[t][cols] += 1
+            ltr[t].append(r[i])
+            if t in local:
+                own.append(lfc[i, local[t]])
+    # average change over lines (each line weighted equally), for never-seen targets
+    msum, mn = np.zeros(len(genes)), np.zeros(len(genes))
+    for full_mean, cols, _ in line_means:
+        msum[cols] += full_mean[cols]
+        mn[cols] += 1
+    mean_lfc = np.where(mn > 0, msum / np.maximum(mn, 1), 0)
+    mean_ltr = np.mean([x for _, _, x in line_means])
+    return lfc_sum, lfc_n, ltr, mean_lfc, mean_ltr, float(np.median(own))
+
+
+def target_change(t, genes_idx, src):
+    lfc_sum, lfc_n, ltr, mean_lfc, mean_ltr, own_drop = src
+    if t in lfc_sum:
+        lfc = np.where(lfc_n[t] > 0, lfc_sum[t] / np.maximum(lfc_n[t], 1), 0)
+        r = np.mean(ltr[t])
+    else:
+        lfc, r = mean_lfc.copy(), mean_ltr
+    lfc, r = ALPHA * lfc, ALPHA * r
+    lfc[genes_idx[t]] = own_drop
+    return lfc, r
+
+
+def context_stats(c, genes):
+    a = ad.read_h5ad(CTRL_DIR / f"context_{c}.h5ad")
+    assert list(a.var_names) == list(genes)
+    X = sp.csr_matrix(a.X, dtype=np.float64)
+    totals = np.asarray(X.sum(1)).ravel()
+    share = np.asarray(X.sum(0)).ravel() / totals.sum()
+    # per-gene overdispersion on depth-normalized counts: var = m + phi * m^2
+    Y = sp.diags(np.median(totals) / totals) @ X
+    m = np.asarray(Y.mean(0)).ravel()
+    v = np.asarray(Y.multiply(Y).mean(0)).ravel() - m ** 2
+    phi = np.clip((v - m) / np.maximum(m, 1e-12) ** 2, 0, 10)
+    phi[m == 0] = 0
+    return share, totals, phi
+
+
+def sample_cells(share, totals, phi, ltr, rng):
+    lib = rng.choice(totals, CELLS) * np.exp(ltr)
+    mu = lib[:, None] * share[None, :]
+    over = phi > 0
+    g = np.ones_like(mu)
+    shape = 1 / phi[over]
+    g[:, over] = rng.gamma(shape, 1 / shape, size=(CELLS, over.sum()))
+    return sp.csr_matrix(rng.poisson(mu * g).astype(np.float32))
+
+
+def write_h5ad(path, genes, targets, gen):
+    """Slim h5ad like `vcc prep`: obs {target_gene, context}, var index genes, X float32 CSR."""
+    n = len(CONTEXTS) * len(targets) * CELLS
+    obs = pd.DataFrame({
+        "target_gene": np.tile(np.repeat(targets, CELLS), len(CONTEXTS)),
+        "context": np.repeat(CONTEXTS, len(targets) * CELLS),
+    }, index=np.arange(n).astype(str))
+    ad.AnnData(obs=obs, var=pd.DataFrame(index=genes)).write_h5ad(path)
+    nnz = 0
+    with h5py.File(path, "a") as f:
+        if "X" in f:
+            del f["X"]
+        first = True
+        for block in gen:
+            nnz += block.nnz
+            if first:
+                ad.io.write_elem(f, "X", block)
+                X = ad.io.sparse_dataset(f["X"])
+                first = False
+            else:
+                X.append(block)
+    return n, nnz
+
+
+def package(h5ad_path, vcc_path, n_obs, n_vars, nnz):
+    zst = h5ad_path.with_suffix(".h5ad.zst")
+    cctx = zstd.ZstdCompressor(level=3, threads=os.cpu_count() or 1)
+    with open(h5ad_path, "rb") as src, open(zst, "wb") as dst:
+        cctx.copy_stream(src, dst)
+    meta = json.dumps({"cli_version": "0.2.2", "n_obs": n_obs, "n_vars": n_vars,
+                       "nnz": nnz, "schema": 1}, sort_keys=True).encode()
+
+    def norm(ti):
+        ti.uid = ti.gid = 0
+        ti.uname = ti.gname = ""
+        ti.mtime = 0
+        return ti
+
+    with tarfile.open(vcc_path, "w") as tar:
+        ti = norm(tarfile.TarInfo("meta.json"))
+        ti.size = len(meta)
+        tar.addfile(ti, io.BytesIO(meta))
+        tar.add(zst, arcname="pred.h5ad.zst", filter=norm)
+    zst.unlink()
+
+
+def main():
+    name = sys.argv[1] if len(sys.argv) > 1 else "transfer_a05"
+    genes = pd.read_csv(CTRL_DIR / "gene_names.csv")["gene_name"].to_numpy(str)
+    targets = pd.read_csv(CTRL_DIR / "pert_counts.csv")["target_gene"].to_numpy(str)
+    gidx = {g: i for i, g in enumerate(genes)}
+    src = source_changes(genes)
+    seen = sum(t in src[0] for t in targets)
+    print(f"targets switched off in a public line: {seen}/{len(targets)}; "
+          f"typical own drop: {np.exp(src[5]):.2f}x")
+
+    rng = np.random.default_rng(SEED)
+
+    def blocks():
+        for c in CONTEXTS:
+            share, totals, phi = context_stats(c, genes)
+            for k, t in enumerate(targets):
+                lfc, r = target_change(t, gidx, src)
+                s = np.clip((share + EPS) * np.exp(lfc) - EPS, 0, None)
+                yield sample_cells(s / s.sum(), totals, phi, r, rng)
+                if (k + 1) % 50 == 0:
+                    print(f"  context {c}: {k + 1}/{len(targets)} targets", flush=True)
+
+    out = ROOT / "data/submissions"
+    out.mkdir(parents=True, exist_ok=True)
+    h5 = out / f"{name}.h5ad"
+    n_obs, nnz = write_h5ad(h5, genes, targets, blocks())
+    print(f"wrote {h5} ({n_obs:,} cells, {nnz:,} nonzeros, {nnz / n_obs:,.0f} per cell)")
+    package(h5, out / f"{name}.vcc", n_obs, len(genes), nnz)
+    print(f"packaged {out / f'{name}.vcc'}")
+
+
+if __name__ == "__main__":
+    main()

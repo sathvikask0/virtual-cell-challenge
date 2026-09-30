@@ -147,4 +147,24 @@ Val (50 held-out genes), best CV setting per model:
 
 ## Current
 
-Nothing running.
+### Exp 5: first 2026 leaderboard submission (transfer, shrunk by half)
+- `src/predict_2026.py` → `data/submissions/transfer_a05.vcc`
+- For each of the 300 targets: average its change over the public lines where it was switched off
+  (272 in K562; 25 also in H1), shrink by 0.5, make the switched-off gene drop to ~0.31x.
+  The 28 never-seen targets get the average change, shrunk the same way.
+- Applied to each context's control cells; 400 new cells per target drawn around the prediction
+  (totals and per-gene spread taken from that context's controls; no control cell copied).
+- Shrink factor 0.5 from Exp 4: vs no shrink, error dropped in 4 of 5 held-out lines, correlation unchanged.
+
+| held out | mae, no shrink | mae, shrink 0.5 | mae, no change |
+|---|---|---|---|
+| h1 | 0.719 | 0.496 | 0.406 |
+| k562 | 0.158 | 0.126 | 0.133 |
+| rpe1 | 0.273 | 0.263 | 0.281 |
+| hepg2 | 0.334 | 0.312 | 0.338 |
+| jurkat | 0.239 | 0.219 | 0.228 |
+
+- Arc's `vcc prep` needs ~33 GB RAM for a full submission, so the script writes and packages the file
+  in chunks itself. A 6-gene pilot passed `vcc prep --dry-run` and the .vcc archive check.
+- Scoring: 6 metrics per context, 0 = Arc's mean-response baseline for that context. 2 submissions/day.
+- Status: building the file.
