@@ -1,0 +1,10 @@
+anndata
+scanpy
+numpy
+scipy
+pandas
+h5py
+scikit-learn
+torch
+jupyter
+google-crc32c
