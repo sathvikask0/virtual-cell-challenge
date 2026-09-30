@@ -26,7 +26,7 @@ writes the same slim .h5ad in chunks and packages the .vcc (tar of meta.json +
 pred.h5ad.zst) itself, matching vcc/prep.py `_write_vcc`.
 
 Output: data/submissions/{name}.vcc
-Usage: python src/predict_2026.py [name] [alpha] [gamma]  (default transfer_a05, ALPHA, 1)
+Usage: python src/predict_2026.py [name] [alpha] [gamma] [hc]  (default transfer_a05, ALPHA, 1, none)
 """
 import io
 import json
@@ -236,6 +236,7 @@ def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "transfer_a05"
     alpha = float(sys.argv[2]) if len(sys.argv) > 2 else ALPHA
     gamma = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
+    hc = float(sys.argv[4]) if len(sys.argv) > 4 else None
     genes = pd.read_csv(CTRL_DIR / "gene_names.csv")["gene_name"].to_numpy(str)
     targets = pd.read_csv(CTRL_DIR / "pert_counts.csv")["target_gene"].to_numpy(str)
     gidx = {g: i for i, g in enumerate(genes)}
@@ -246,6 +247,8 @@ def main():
 
     rng = np.random.default_rng(SEED)
     changes = recenter({t: target_change(t, gidx, src, alpha) for t in targets}, gidx, gamma)
+    if hc is not None:  # H1's typical change (see MODEL.md)
+        changes = add_common(changes, gidx, line_common(genes, "h1"), hc)
 
     def blocks():
         for c in CONTEXTS:
