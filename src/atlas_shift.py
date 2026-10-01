@@ -99,6 +99,7 @@ def fused(targets, genes_out, exclude=()):
     cols = np.array([g26.get(g, -1) for g in genes_out])
     num_c = np.zeros((len(targets), len(genes_out)))
     num_b, den = np.zeros_like(num_c), np.zeros_like(num_c)
+    pos, neg, nsrc = np.zeros_like(num_c), np.zeros_like(num_c), np.zeros_like(num_c)
     for line, w in WEIGHTS.items():
         if line in exclude:
             continue
@@ -111,11 +112,17 @@ def fused(targets, genes_out, exclude=()):
             eb = np.where(cols >= 0, c["eb"][rows[t]][cols], np.nan)
             m = ~np.isnan(ec)
             num_c[i] += w * np.where(m, ec, 0)
+            pos[i] += m & (ec > 0)
+            neg[i] += m & (ec < 0)
+            nsrc[i] += m
             num_b[i] += w * np.where(m, eb, 0)
             den[i] += w * m
     with np.errstate(invalid="ignore"):
-        return (np.where(den > 0, num_c / den, 0).astype(np.float32),
-                np.where(den > 0, num_b / den, 0).astype(np.float32))
+        ec_f = np.where(den > 0, num_c / den, 0).astype(np.float32)
+        eb_f = np.where(den > 0, num_b / den, 0).astype(np.float32)
+    fused.agree = np.where(ec_f > 0, pos, neg)  # sources whose sign matches the fused change
+    fused.nsrc = nsrc
+    return ec_f, eb_f
 
 
 def promoter_pairs(targets, genes_out):
@@ -150,9 +157,18 @@ def control_stats(X, n_cells, pool, seed):
     return m, q, tpl, depths
 
 
-def profiles(targets, genes_out, m, q, ac, ab, exclude=()):
-    """Desired per-cell mean and pooled profile per target (rows sum to 1)."""
+def profiles(targets, genes_out, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
+    """Desired per-cell mean and pooled profile per target (rows sum to 1).
+    agree/thr: in the PER-CELL target only, keep a gene's change only if at least `agree` sources measured it
+    and agree on its sign, and |change| > thr; the pooled target keeps every change."""
     ec, eb = fused(targets, genes_out, exclude)
+    if agree:
+        keep = (fused.agree >= agree) & (fused.nsrc >= agree) & (np.abs(ec) > thr)
+        gpos = {g: i for i, g in enumerate(genes_out)}
+        for i, t in enumerate(targets):  # never mask the knocked-down gene itself
+            if t in gpos:
+                keep[i, gpos[t]] = True
+        ec = np.where(keep, ec, 0).astype(np.float32)
     dc = desired_mean(m, ec, space="log2fc", amplitude=ac, clip=3)
     db = desired_mean(q, eb, space="bulk_delta", amplitude=ab, clip=3)
     pairs = promoter_pairs(targets, genes_out)
@@ -175,7 +191,7 @@ def thin_counts(X, factor, rng):
     return Y
 
 
-def local(line, name, ac=0.6, ab=0.3, pool=4, thin=0):
+def local(line, name, ac=0.6, ab=0.3, pool=4, thin=0, agree=0, thr=0.0):
     """Predict a held-out public line from the others and score it, like src/local_eval.py."""
     import local_eval as le
     out = ROOT / "data/local_eval" / line
@@ -187,7 +203,7 @@ def local(line, name, ac=0.6, ab=0.3, pool=4, thin=0):
     pool = int(pool)
     n_max = int(counts[targets].max())
     m, q, tpl, depths = control_stats(ctrl_X, n_max, pool, le.SEED)
-    dc, db = profiles(targets, genes, m, q, ac, ab, exclude=(line,))
+    dc, db = profiles(targets, genes, m, q, ac, ab, exclude=(line,), agree=int(agree), thr=thr)
     blocks, labels = [sp.csr_matrix(ctrl_X, dtype=np.float32)], [le.CTRL] * ctrl_X.shape[0]
     rng = np.random.default_rng(le.SEED)
     if thin:  # binomial thinning of real control cells by the per-cell target's ratio to the control mean
@@ -209,7 +225,7 @@ def local(line, name, ac=0.6, ab=0.3, pool=4, thin=0):
                       var=pd.DataFrame(index=genes))
     p = out / f"pred_{name}.h5ad"
     pred.write_h5ad(p)
-    print(f"{line}/{name}: ac={ac}, ab={ab}, pool={pool}, thin={thin}", flush=True)
+    print(f"{line}/{name}: ac={ac}, ab={ab}, pool={pool}, thin={thin}, agree={agree}, thr={thr}", flush=True)
     le.cell_eval("run", "-ap", p, "-ar", out / "real.h5ad", "--preset", "vcc2026", "-o", out / f"run_{name}",
                  "--cache-real", out / "real_cache", "--cache-pred", out / f"cache_{name}")
     ref = (["--real-bundle", out / "bundle"] if (out / "bundle").exists() else

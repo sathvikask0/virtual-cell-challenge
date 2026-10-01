@@ -415,3 +415,11 @@ Why fid/jac are ~0 (H1, current best ac 1.0 / ab 0.5, per-gene DE tables saved w
   0.535 / 0.544 / 0.550 and median count 4,270 / 2,041 / 842 (truth 268).
 - Testing binomial thinning instead (Gerard 2020, seqgendiff): real control cells, each gene's counts scaled by the
   per-cell target's ratio to the control mean; unchanged genes stay exactly as the real cells. Runs `as_thin_c10`, `as_thin_c06`.
+- Binomial thinning: worse (0.195 at ac 1.0, 0.157 at ac 0.6; pds drops to 0.65 / 0.59). It still calls a median of 1,764 genes
+  with 0.539 sign precision, so the template artifact is not the main problem: our transferred changes themselves
+  have the wrong sign in H1 about half the time.
+- Offline (H1, 150 targets): sign accuracy of transferred changes vs truth, on truly significant genes:
+  all 0.61; |change| > 0.25 and all 3 sources agree 0.76 (~236 genes per target, close to the true median 268);
+  |change| > 0.5 and 3 agree 0.82 (22 per target).
+- Testing: per-cell target keeps only changes > 0.25 where all 3 sources agree; pooled target unchanged
+  (`as_ag3_p4`, `as_ag3_p2`).
