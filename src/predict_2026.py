@@ -26,7 +26,8 @@ writes the same slim .h5ad in chunks and packages the .vcc (tar of meta.json +
 pred.h5ad.zst) itself, matching vcc/prep.py `_write_vcc`.
 
 Output: data/submissions/{name}.vcc
-Usage: python src/predict_2026.py [name] [alpha] [gamma] [hc|none] [nb]  (default transfer_a05, ALPHA, 1, none, off)
+Usage: python src/predict_2026.py [name] [alpha] [gamma] [hc|none] [nb|-] [km]
+       (default transfer_a05, ALPHA, 1, none, off, no map)
 """
 import io
 import json
@@ -162,6 +163,51 @@ def add_common(changes, genes_idx, common, weight=1.0):
     return out
 
 
+def k562_to_h1(genes, targets, lam=10.0, exclude=()):
+    """Linear map (ridge) from a target's K562 change to its H1 change, trained on targets
+    switched off in both lines (minus `exclude`). Returns {target: predicted H1-specific change}
+    on `genes` (0 off the shared genes) for targets switched off in K562."""
+    k, h = (np.load(ROOT / "data/lines" / f"{n}.npz") for n in ("k562", "h1"))
+    common = np.intersect1d(np.intersect1d(k["genes"], h["genes"]), genes)
+
+    def lfc(d):
+        ix = {g: i for i, g in enumerate(d["genes"])}
+        cols = np.array([ix[g] for g in common])
+        c, ctrl = d["counts"][:, cols], d["ctrl"][cols]
+        return np.log((c / c.sum(1, keepdims=True) + EPS) / (ctrl / ctrl.sum() + EPS))
+
+    LK, LH = lfc(k), lfc(h)
+    LK -= LK.mean(0)
+    rk = {t: i for i, t in enumerate(k["targets"])}
+    rh = {t: i for i, t in enumerate(h["targets"])}
+    train = [t for t in h["targets"] if t in rk and t not in set(exclude)]
+    X = LK[[rk[t] for t in train]]
+    Y = LH[[rh[t] for t in train]]
+    Y = Y - Y.mean(0)
+    A = np.linalg.solve(X @ X.T + lam * np.eye(len(train)), Y)  # W = X^T A (dual form)
+    gidx = {g: i for i, g in enumerate(genes)}
+    cols = np.array([gidx[g] for g in common])
+    out = {}
+    for t in targets:
+        if t in rk:
+            v = np.zeros(len(genes))
+            v[cols] = (LK[rk[t]] @ X.T) @ A
+            out[t] = v
+    print(f"k562_to_h1: trained on {len(train)} targets, {len(common):,} genes, {len(out)} predicted")
+    return out
+
+
+def add_mapped(changes, genes_idx, mapped):
+    """Add the mapped change to each target's change (own gene's drop kept)."""
+    out = {}
+    for t, (lfc, r) in changes.items():
+        new = lfc + mapped[t] if t in mapped else lfc
+        if t in genes_idx:
+            new[genes_idx[t]] = lfc[genes_idx[t]]
+        out[t] = (new, r)
+    return out
+
+
 def add_neighbours(changes, genes, own_drop, near=1e3, far=5e3):
     """Switching a gene off also lowers genes that start right next to it on the DNA (H1: 0.28x
     within 1 kb, 0.40x within 5 kb; K562 shows the same, weaker). Set genes starting within
@@ -256,6 +302,7 @@ def main():
     gamma = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
     hc = float(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[4] != "none" else None
     nb = len(sys.argv) > 5 and sys.argv[5] == "nb"
+    km = float(sys.argv[6]) if len(sys.argv) > 6 else None
     genes = pd.read_csv(CTRL_DIR / "gene_names.csv")["gene_name"].to_numpy(str)
     targets = pd.read_csv(CTRL_DIR / "pert_counts.csv")["target_gene"].to_numpy(str)
     gidx = {g: i for i, g in enumerate(genes)}
@@ -268,6 +315,8 @@ def main():
     changes = recenter({t: target_change(t, gidx, src, alpha) for t in targets}, gidx, gamma)
     if hc is not None:  # H1's typical change (see MODEL.md)
         changes = add_common(changes, gidx, line_common(genes, "h1"), hc)
+    if km is not None:  # K562 -> H1 linear map, ridge strength km (see k562_to_h1)
+        changes = add_mapped(changes, gidx, k562_to_h1(genes, targets, km))
     if nb:  # neighbouring genes drop too (see add_neighbours)
         changes = add_neighbours(changes, genes, src[5])
 
