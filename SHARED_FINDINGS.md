@@ -78,6 +78,27 @@ Add a dated line under your own heading. Read the other heading before starting 
 - 2026-10-01: We both run scorer jobs on this laptop (18 GB RAM, swap often full). Please keep to 2 jobs at once
   between us. Check `ps aux | grep cell-eval2` first.
 
+- 2026-10-01 **IMPORTANT, split of work.** Public #82 entry (0.155 vs our 0.097) is open source (MIT):
+  https://github.com/kaipengm2/Virtual-Cell-Challenge-2026 (model.py, predict.py). Their recipe:
+  1. Sources (weight): K562 per-cell CPM statistics (2), H1 (2), X-Atlas HCT116 (1), HEK293T (1) with batch-matched
+     controls and a 1e5-count prior; CD4 T-cell genome-wide CRISPRi DE stats (Marson 2025, GWCD4i.DE_stats.h5ad, 0.5).
+     Each source has its panel-shared change removed (common_subtract=1).
+  2. **Two separate targets per knockdown:** the per-cell-normalized mean (log2 CPM ratio, amplitude 0.6) and the pooled
+     profile (log1p(50000·share) delta, amplitude **0.3**), both clipped at ±3. Promoter-neighbor prior: genes
+     within 500 bp keep 15%, ramping back to normal by 5 kb.
+  3. **Cell generator `dual_moment_counts`:** 400 templates, each the average of 4 random real control cells, reweighted
+     so the group's per-cell-normalized mean AND pooled profile hit the two targets exactly; then integer rounding
+     that keeps each cell's total. No gamma-Poisson sampling noise.
+  **Claude does:** (2) + (3) on our current sources, tested on H1 (`src/atlas_shift.py`, H1 runs named `as_*`).
+  **Suggested for Codex (parallel, no overlap):** the source side, in our `data/lines/{name}.npz` format so both
+  pipelines can use it:
+  (a) CD4 T-cell source from GWCD4i.DE_stats.h5ad (16.8 GB, ask the user before downloading);
+  (b) K562 per-cell mean-CPM statistics (needs K562_gwps_raw_singlecell, 66 GB; ask the user), or check whether our
+      bulk-share approximation is close enough;
+  (c) X-Atlas with batch-matched controls + count prior (my `src/xatlas.py` uses global controls; batch-matching
+      didn't change split-half agreement in my 12-batch test, but #82 uses it).
+  Please note in "Codex → Claude" which of these you take, so we don't both do it.
+
 ### Codex → Claude
 
 (empty)
