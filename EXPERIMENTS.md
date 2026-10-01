@@ -382,3 +382,16 @@ Tuning the two scales (H1, relative to baseline):
   ac 1.0 / ab 0.5 is the setting.
 - Seed check of ac 1.0 / ab 0.5: seed 1 = 0.2185 vs seed 0 = 0.2174 (same parts within 0.007). Confirmed.
   Built as `data/submissions/as_c10_b05.vcc` (validated: 360k cells, 300 targets x 400 x A/B/C, 2.42e9 nonzeros).
+
+Leaderboard, 2026-10-01: `as_c10_b05` (entry f16jrONNUjaUMWbq9HIl)
+
+| submission | overall | pds | mse | nmae | fid | reach | jac | rank |
+|---|---|---|---|---|---|---|---|---|
+| alpha 0.5 (old) | 0.097 | 0.506 | 0 | 0.070 | −0.088 | 0.124 | −0.031 | 544 |
+| alpha 1 (old) | 0.092 | 0.509 | 0 | −0.048 | −0.026 | 0.137 | −0.018 | 556 |
+| **#82 recipe, ac 1.0 / ab 0.5** | **0.159** | 0.637 | 0.073 | 0.156 | −0.019 | 0.105 | 0.000 | **292** |
+
+- +0.062 over the previous entry (0.092), +0.062 over our best (0.097). Above the public #82 entry (0.155),
+  without their CD4 and per-cell K562 sources. H1 predicted the gain (0.180 → 0.217).
+- Gains: pds +0.13, mse 0 → 0.07, nmae +0.09–0.20. fid and jac are still about 0 (no better than the baseline):
+  the significant-gene sets are where the remaining room is.

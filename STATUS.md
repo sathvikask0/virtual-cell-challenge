@@ -1,5 +1,7 @@
 # Status (2026-09-30)
 
+## Latest leaderboard (2026-10-01): **0.159**, rank 292 (`as_c10_b05`, src/atlas_shift.py). Was 0.092.
+
 ## Goal
 
 Raise the leaderboard score above our current entry, 0.092 (α = 1). Our best so far was 0.097 (α = 0.5).
