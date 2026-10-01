@@ -367,3 +367,14 @@ cells = 4-control-cell templates reweighted to hit both targets exactly. H1, rel
 - First clear gain: +0.025 (~25x seed noise). It comes from pds, nmae and, for the first time, mse above 0.
   Scaling the two targets separately avoids the shrink trade-off we kept hitting with a single alpha.
 - Vetted controls + neighbor rule don't stack (0.178).
+
+Tuning the two scales (H1, relative to baseline):
+
+| per-cell scale (ac) | pooled scale (ab) | H1 | pds | mse | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|---|---|
+| 0.6 | 0.3 | 0.205 | 0.709 | 0.009 | −0.015 | 0.436 | 0.022 | 0.069 |
+| 0.6 | 0.5 | 0.208 | 0.726 | 0 | −0.016 | 0.440 | 0.025 | 0.071 |
+| 1.0 | 0.5 | **0.217** | 0.727 | 0.001 | −0.024 | 0.470 | 0.044 | 0.087 |
+
+- The per-cell scale drives the significant-gene scores (fid, reach, jac); 1.0 beats 0.6 by ~0.01.
+  The pooled scale trades mse against pds. Testing ac 1.5.
