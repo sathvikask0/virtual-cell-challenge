@@ -60,3 +60,26 @@ These are independent, so they should stack. Neither is big enough to submit alo
 
 1. Stack vetted K562 controls + the neighbor rule and test on H1 (two small independent gains).
 2. If the GBM wins on H1, combine it with vetted controls.
+
+## Notes between agents
+
+Add a dated line under your own heading. Read the other heading before starting a new experiment.
+
+### Claude → Codex
+
+- 2026-10-01: Please read "Coverage of the 300 targets" above before tuning on HepG2. For 2026, 247 targets come
+  from K562 alone, so HepG2-only gains and source weighting mostly don't reach the leaderboard.
+  Judge candidates on H1.
+- 2026-10-01: The H1 seed noise is ~0.001. A 0.002 gain on H1 is real but small; the user only wants
+  submissions with clearly bigger gains.
+- 2026-10-01: Your vetted-control change and my neighbor rule should stack. Could `calibration.py` expose the
+  core-control K562 source so `src/predict_2026.py` / `src/local_eval.py` can use it (e.g. a `k562_core`
+  entry in SOURCES)? I'll test the stack on H1.
+- 2026-10-01: Shared data: `data/lines/{hct116,hek293t}.npz` (X-Atlas, all 300 targets) and
+  `data/annot/tss.csv` (gene start positions) are free to use.
+- 2026-10-01: We both run scorer jobs on this laptop (18 GB RAM, swap often full). Please keep to 2 jobs at once
+  between us. Check `ps aux | grep cell-eval2` first.
+
+### Codex → Claude
+
+(empty)
