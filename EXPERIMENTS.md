@@ -317,3 +317,24 @@ Neighboring genes drop too (genes starting within 1 kb of the target set to the 
 
 Next source: X-Atlas/Orion (Xaira 2025), genome-wide CRISPRi in HCT116 and HEK293T, per-cell parquet on Hugging Face (~127 GB).
 Each batch mixes all targets (one test batch: 18.5k cells, 10k targets, 168 of the 2026 targets).
+
+X-Atlas/Orion added (`src/xatlas.py`, streamed 127 GB, kept per-target means): HCT116 18,293 targets (median 150 cells),
+HEK293T 18,311 (median 200). Both cover all 300 2026 targets.
+Fast check: 279 H1 targets that all three lines knocked down; centered profiles; share of other targets ranked
+closer (lower is better); paired bootstrap 95% interval vs K562:
+
+| source | share closer | vs K562 |
+|---|---|---|
+| K562 alone | 0.124 | |
+| HCT116 alone | 0.222 | +0.098 [+0.063, +0.131] |
+| HEK293T alone | 0.241 | +0.116 [+0.083, +0.148] |
+| HCT116 + HEK293T | 0.191 | +0.067 [+0.038, +0.096] |
+| K562 + HCT116 | 0.121 | −0.003 [−0.023, +0.016] |
+| K562 + HEK293T | 0.130 | +0.006 [−0.010, +0.021] |
+| K562 + HCT116 + HEK293T | 0.118 | −0.006 [−0.026, +0.014] |
+
+- No gain. The new lines are much worse than K562 at predicting H1, and adding them to K562 is noise.
+- HCT116 shows ~34 clearly changed genes per 2026 target (K562 ~1), but those changes are cell-type specific:
+  K562 and HCT116 profiles of the same target barely agree (the right target ranks behind 26% of others).
+- Knockdown effects are mostly cell-type specific, so more unrelated cell types don't help. Not run on the full H1 test.
+- Caveat: the 2025 H1 targets may have been chosen with K562 in mind, which would favor K562 on this check.

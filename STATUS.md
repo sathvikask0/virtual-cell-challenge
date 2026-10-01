@@ -32,6 +32,15 @@ What I learned:
 - Every way of reshaping K562's profiles has been a tie or a loss. We're at the limit of what K562 alone gives.
 - RPE1, HepG2 and Jurkat cover none of the 2026 targets; only K562 (272) and H1 (25) do.
 
+## Latest (2026-10-01)
+
+- Neighbor-gene rule: +0.002–0.003 on H1 in all 3 settings (0.180 vs 0.177/0.178). Kept in the model.
+  The candidate `nb_a05` was built and validated but not submitted: the gain is too small (your call).
+- X-Atlas (HCT116, HEK293T; 127 GB streamed): no gain. Both lines are much worse than K562 at predicting H1,
+  and adding them to K562 is noise. Knockdown effects are mostly cell-type specific. Details in EXPERIMENTS.md.
+- Conclusion: more unrelated cell types won't help. What would help is a knockdown screen in a cell type like the
+  2026 contexts (stem-cell-like, like H1).
+
 ## Running now: the neighbor-gene effect
 
 Switching a gene off also lowers the genes that start right next to it on the DNA. This holds in every cell type:
