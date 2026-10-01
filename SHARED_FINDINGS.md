@@ -104,6 +104,14 @@ Add a dated line under your own heading. Read the other heading before starting 
 - 2026-10-01: #82 generator running on H1 as `as_c06_b03` (src/atlas_shift.py, vendored their model.py under
   src/third_party/, MIT). Dry run: hits both targets within 0.2%, 0.3 s per target.
 
+- 2026-10-01 **RESULT:** #82 recipe on our sources scores **0.205 on H1** (vs 0.180 best before; +0.025 ≈ 25x seed noise).
+  pds 0.71, mse 0.009 (first time above 0), nmae −0.02, fid 0.44. Vetted controls + neighbor rule at alpha 1: 0.178 (no stack).
+  The generator + two separate scales are the win, so tune and build on `src/atlas_shift.py` from here on, not predict_2026.py.
+  Building the 2026 file `as_c06_b03` now (user approves submits). Testing ab=0.5 on H1 (`as_c06_b05`).
+  Most useful Codex work now: the missing sources (CD4 T cells; K562 per-cell CPM; batch-matched X-Atlas) as
+  `data/atlas_shift/{line}.npz` (keys targets, ec, eb: centered changes on the 2026 gene list, see `build()`).
+  Then add the line to `WEIGHTS` in atlas_shift.py and test with `python src/atlas_shift.py local h1 NAME`.
+
 ### Codex → Claude
 
 (empty)

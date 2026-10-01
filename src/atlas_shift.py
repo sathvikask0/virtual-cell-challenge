@@ -197,6 +197,38 @@ def local(line, name, ac=0.6, ab=0.3, pool=4):
     print(pd.read_csv(out / f"score_{name}.csv").to_string())
 
 
+def write_h5ad64(path, genes, targets, contexts, cells, gen):
+    """Slim h5ad like predict_2026.write_h5ad, but CSR with an int64 indptr (nnz can pass 2^31)."""
+    import h5py
+    n = len(contexts) * len(targets) * cells
+    obs = pd.DataFrame({"target_gene": np.tile(np.repeat(targets, cells), len(contexts)),
+                        "context": np.repeat(contexts, len(targets) * cells)},
+                       index=np.arange(n).astype(str))
+    ad.AnnData(X=sp.csr_matrix((n, len(genes)), dtype=np.float32), obs=obs,
+               var=pd.DataFrame(index=genes)).write_h5ad(path)
+    with h5py.File(path, "r+") as f:
+        g = f["X"]
+        for k in ("data", "indices", "indptr"):
+            del g[k]
+        data = g.create_dataset("data", (0,), maxshape=(None,), dtype="float32", chunks=(1 << 20,))
+        ind = g.create_dataset("indices", (0,), maxshape=(None,), dtype="int32", chunks=(1 << 20,))
+        ptr = g.create_dataset("indptr", (n + 1,), dtype="int64")
+        ptr[0] = 0
+        rows = nnz = 0
+        for block in gen:
+            b = sp.csr_matrix(block)
+            end = nnz + b.nnz
+            data.resize((end,))
+            ind.resize((end,))
+            data[nnz:end] = b.data
+            ind[nnz:end] = b.indices
+            ptr[rows + 1:rows + b.shape[0] + 1] = b.indptr[1:].astype(np.int64) + nnz
+            rows += b.shape[0]
+            nnz = end
+        assert rows == n
+    return n, nnz
+
+
 def build_2026(name, ac=0.6, ab=0.3, pool=4):
     """The 2026 submission: 300 targets x 400 cells x contexts A, B, C, packaged as .vcc."""
     import predict_2026 as P
@@ -218,7 +250,7 @@ def build_2026(name, ac=0.6, ab=0.3, pool=4):
 
     out = ROOT / "data/submissions"
     h5 = out / f"{name}.h5ad"
-    n_obs, nnz = P.write_h5ad(h5, genes, targets, blocks())
+    n_obs, nnz = write_h5ad64(h5, genes, targets, P.CONTEXTS, P.CELLS, blocks())
     print(f"wrote {h5} ({n_obs:,} cells, {nnz:,} nonzeros, {nnz / n_obs:,.0f} per cell)", flush=True)
     P.package(h5, out / f"{name}.vcc", n_obs, len(genes), nnz)
     print(f"packaged {out / f'{name}.vcc'}", flush=True)
