@@ -433,3 +433,16 @@ Why fid/jac are ~0 (H1, current best ac 1.0 / ab 0.5, per-gene DE tables saved w
   co-expression with target in input controls 0.549; size of transferred change 0.529; K562 knockdown-profile
   similarity 0.507; general responsiveness in sources 0.481. Which genes become significant is mostly statistical power
   (expression), which our generator already gets from real control cells. Similarity adds little. Not pursued.
+
+Overnight 2026-10-01 (chain v2 + Codex's shared selector `src/overnight_select.py`):
+- K562 from the per-cell file (batch-matched controls, `src/k562_cells.py`): H1 0.219 vs 0.217 / 0.219 for the averaged
+  file, a tie. The pooled-share stand-in was good enough.
+- K562 per-cell + CD4 (w 0.5): 0.2253. Codex's CD4 at weight 1 (averaged K562): 0.2269 / 0.2276 (two seeds), the best.
+- Selected and uploaded `as_cd4_w1_c10_b05` (entry KHbUyq5agxuOh2mSHREg):
+
+| submission | overall | pds | mse | nmae | fid | reach | jac | rank |
+|---|---|---|---|---|---|---|---|---|
+| as_c10_b05 | 0.159 | 0.637 | 0.073 | 0.156 | −0.019 | 0.105 | 0.000 | 292 |
+| **as_cd4_w1_c10_b05 (+ CD4 w 1)** | **0.1745** | 0.667 | 0.103 | 0.174 | −0.012 | 0.115 | 0.000 | **232** |
+
+- +0.016 on the leaderboard from adding CD4 (H1 had +0.009). fid/jac still ~0.
