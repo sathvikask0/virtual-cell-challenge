@@ -32,7 +32,27 @@ What I learned:
 - Every way of reshaping K562's profiles has been a tie or a loss. We're at the limit of what K562 alone gives.
 - RPE1, HepG2 and Jurkat cover none of the 2026 targets; only K562 (272) and H1 (25) do.
 
-Next ideas (new information, not reshaping):
+## Running now: the neighbor-gene effect
+
+Switching a gene off also lowers the genes that start right next to it on the DNA. This holds in every cell type:
+
+| genes starting near the target's start | H1 | K562 |
+|---|---|---|
+| within 1 kb | 0.28× (91% drop by >30%) | 0.60× |
+| within 5 kb | 0.40× | 0.63× |
+| random genes | 1.0× | 1.0× |
+
+Rule (`add_neighbours` in `src/predict_2026.py`; gene positions from UCSC refGene, `data/annot/tss.csv`):
+
+    Δ_{t,g} = min(Δ_{t,g}, d)      if g starts within 1 kb of t     (d = typical own drop ≈ log 0.31)
+    Δ_{t,g} = min(Δ_{t,g}, d/2)    if g starts within 1–5 kb of t
+
+- It affects 54 of the 300 2026 targets, including some of the 28 targets no line covers.
+- On the fast pds check it helped a little (0.124 → 0.118 share of wrong targets ranked closer, lower is better).
+  Those neighbors are also strongly changed genes in the truth, which should help the significant-gene scores.
+- H1 runs: `nb_a1` (α = 1, γ = 0) and `nb_a1_g1` (α = 1). Bar: 0.178.
+
+Other ideas (new information, not reshaping):
 1. For the 25 targets H1 covers, use H1's profile alone (H1 looks like the contexts; K562 doesn't).
    That's a small number of targets, and it can't be tested locally.
 2. Side effects on neighboring genes: switching off a gene often also lowers the gene next to it on the DNA.
