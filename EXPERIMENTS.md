@@ -395,3 +395,17 @@ Leaderboard, 2026-10-01: `as_c10_b05` (entry f16jrONNUjaUMWbq9HIl)
   without their CD4 and per-cell K562 sources. H1 predicted the gain (0.180 → 0.217).
 - Gains: pds +0.13, mse 0 → 0.07, nmae +0.09–0.20. fid and jac are still about 0 (no better than the baseline):
   the significant-gene sets are where the remaining room is.
+
+Why fid/jac are ~0 (H1, current best ac 1.0 / ab 0.5, per-gene DE tables saved with --cache-pred):
+
+| per target | median | mean |
+|---|---|---|
+| genes we make significant | 4,270 | 4,250 |
+| genes truly significant | 268 | 1,239 |
+| share of our significant genes with the right sign | 0.52 | 0.54 |
+
+- We call ~16x too many genes, with near coin-flip signs, and our count doesn't track the true count (corr 0.01).
+- Likely cause: each predicted cell averages 4 real control cells, so predicted cells have fewer zeros and less
+  spread than real ones. The Wilcoxon rank test picks that up on thousands of genes even where the mean is right.
+- Cutting our list to the true length wouldn't help (fid 0.517 → 0.533): the artifacts sit at the top of the ranking.
+- Testing templates from single cells (pool 1) and pairs (pool 2).
