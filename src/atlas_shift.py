@@ -161,7 +161,21 @@ def profiles(targets, genes_out, m, q, ac, ab, exclude=()):
     return dc, db
 
 
-def local(line, name, ac=0.6, ab=0.3, pool=4):
+def thin_counts(X, factor, rng):
+    """Binomial thinning (Gerard 2020, seqgendiff): real control cells X (cells x genes, counts), each gene's
+    counts scaled by `factor` in expectation. factor < 1: keep each count with probability factor;
+    factor > 1: add Poisson((factor - 1) * x). Genes with factor 1 stay exactly as the real cells."""
+    X = sp.csr_matrix(X, dtype=np.float64)
+    f = factor[X.indices]
+    x = X.data
+    out = np.where(f < 1, rng.binomial(x.astype(np.int64), np.clip(f, 0, 1)),
+                   x + rng.poisson(np.maximum(f - 1, 0) * x))
+    Y = sp.csr_matrix((out.astype(np.float32), X.indices.copy(), X.indptr.copy()), shape=X.shape)
+    Y.eliminate_zeros()
+    return Y
+
+
+def local(line, name, ac=0.6, ab=0.3, pool=4, thin=0):
     """Predict a held-out public line from the others and score it, like src/local_eval.py."""
     import local_eval as le
     out = ROOT / "data/local_eval" / line
@@ -176,7 +190,15 @@ def local(line, name, ac=0.6, ab=0.3, pool=4):
     dc, db = profiles(targets, genes, m, q, ac, ab, exclude=(line,))
     blocks, labels = [sp.csr_matrix(ctrl_X, dtype=np.float32)], [le.CTRL] * ctrl_X.shape[0]
     rng = np.random.default_rng(le.SEED)
-    for i, t in enumerate(targets):
+    if thin:  # binomial thinning of real control cells by the per-cell target's ratio to the control mean
+        Xc = sp.csr_matrix(ctrl_X)
+        for i, t in enumerate(targets):
+            n = int(counts[t])
+            rows = rng.choice(Xc.shape[0], n, replace=False)
+            factor = np.divide(dc[i], m, out=np.ones_like(m), where=m > 0)
+            blocks.append(thin_counts(Xc[rows], factor, rng))
+            labels += [t] * n
+    for i, t in enumerate(targets if not thin else []):
         n = int(counts[t])
         idx = np.sort(rng.choice(n_max, n, replace=False)) if n < n_max else np.arange(n_max)
         x = dual_moment_counts(tpl[idx], dc[i], db[i], depths=depths[idx], seed=le.SEED + i)
@@ -187,7 +209,7 @@ def local(line, name, ac=0.6, ab=0.3, pool=4):
                       var=pd.DataFrame(index=genes))
     p = out / f"pred_{name}.h5ad"
     pred.write_h5ad(p)
-    print(f"{line}/{name}: ac={ac}, ab={ab}, pool={pool}", flush=True)
+    print(f"{line}/{name}: ac={ac}, ab={ab}, pool={pool}, thin={thin}", flush=True)
     le.cell_eval("run", "-ap", p, "-ar", out / "real.h5ad", "--preset", "vcc2026", "-o", out / f"run_{name}",
                  "--cache-real", out / "real_cache", "--cache-pred", out / f"cache_{name}")
     ref = (["--real-bundle", out / "bundle"] if (out / "bundle").exists() else

@@ -409,3 +409,9 @@ Why fid/jac are ~0 (H1, current best ac 1.0 / ab 0.5, per-gene DE tables saved w
   spread than real ones. The Wilcoxon rank test picks that up on thousands of genes even where the mean is right.
 - Cutting our list to the true length wouldn't help (fid 0.517 → 0.533): the artifacts sit at the top of the ranking.
 - Testing templates from single cells (pool 1) and pairs (pool 2).
+- Pool size (H1): pool 4 = 0.217, pool 2 = 0.217, pool 1 = 0.206 (mse 0.045, reach 0.077, but fid 0.36, jac 0.05).
+  The generator's reweighting bends every gene a little, and the direction of that artifact depends on pool size:
+  share of our significant genes called UP is 81% / 66% / 17% for pool 4 / 2 / 1 (truth 48%), with sign precision
+  0.535 / 0.544 / 0.550 and median count 4,270 / 2,041 / 842 (truth 268).
+- Testing binomial thinning instead (Gerard 2020, seqgendiff): real control cells, each gene's counts scaled by the
+  per-cell target's ratio to the control mean; unchanged genes stay exactly as the real cells. Runs `as_thin_c10`, `as_thin_c06`.
