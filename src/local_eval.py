@@ -11,12 +11,13 @@ Commands:
                                             write data/local_eval/LINE/{real.h5ad, ctrl_input.h5ad},
                                             build the official baseline (0 end of the scale) and,
                                             with --bundle, the replicate (1 end; >2 h on a laptop)
-  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1] [phi_scale=1] [hc=W] [nb=1] [km=LAM]
+  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1] [phi_scale=1] [hc=W] [nb=1] [km=LAM] [gbm=1|2]
                                             (k, kt, gamma: options of predict_2026.py;
                                              phi_scale: multiply the sampler's overdispersion;
                                              hc: add W x H1's typical change, from non-test knockdowns;
                                              nb: neighbouring genes drop too;
-                                             km: add K562->H1 linear map, ridge LAM)
+                                             km: add K562->H1 linear map, ridge LAM;
+                                             gbm: replace changes by src/gbm.py's (2: K562 size))
                                             write a transfer prediction and score it
 
 LINE: h1 (VCC 2025, per-cell) or hepg2 / jurkat (Nadig 2025, per-cell).
@@ -99,7 +100,7 @@ def setup(line):
               "--preset", "vcc2026", "--force")
 
 
-def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc=None, nb=0, km=None):
+def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc=None, nb=0, km=None, gbm=None):
     out = ROOT / "data/local_eval" / line
     real = ad.read_h5ad(out / "real.h5ad", backed="r")
     genes = np.array(real.var_names, dtype=str)
@@ -121,6 +122,12 @@ def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc
         changes = add_common(changes, gidx, line_common(genes, "h1", exclude=targets), hc)
     if km is not None:  # K562 -> H1 linear map, trained on non-test knockdowns
         changes = add_mapped(changes, gidx, k562_to_h1(genes, targets, km, exclude=targets))
+    if gbm is not None:  # learned cross-line change (src/gbm.py); gbm=2: rescaled to K562's size
+        from gbm import changes_for
+        learned = changes_for(targets, genes, share, scale_k562=gbm == 2)
+        changes = {t: ((np.where(np.arange(len(genes)) == gidx.get(t, -1), lfc, learned[t]), r)
+                       if t in learned else (lfc, r)) for t, (lfc, r) in changes.items()}
+        print(f"gbm: learned change for {len(learned)}/{len(targets)} targets", flush=True)
     if nb:  # neighbouring genes drop too
         changes = add_neighbours(changes, genes, src[5])
     for t in targets:
