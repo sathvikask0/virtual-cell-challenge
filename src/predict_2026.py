@@ -26,7 +26,7 @@ writes the same slim .h5ad in chunks and packages the .vcc (tar of meta.json +
 pred.h5ad.zst) itself, matching vcc/prep.py `_write_vcc`.
 
 Output: data/submissions/{name}.vcc
-Usage: python src/predict_2026.py [name] [alpha] [gamma] [hc]  (default transfer_a05, ALPHA, 1, none)
+Usage: python src/predict_2026.py [name] [alpha] [gamma] [hc|none] [nb]  (default transfer_a05, ALPHA, 1, none, off)
 """
 import io
 import json
@@ -162,6 +162,24 @@ def add_common(changes, genes_idx, common, weight=1.0):
     return out
 
 
+def add_neighbours(changes, genes, own_drop, near=1e3, far=5e3):
+    """Switching a gene off also lowers genes that start right next to it on the DNA (H1: 0.28x
+    within 1 kb, 0.40x within 5 kb; K562 shows the same, weaker). Set genes starting within
+    `near` of the target's start to the typical own drop, and within `far` to half of it."""
+    tss = pd.read_csv(ROOT / "data/annot/tss.csv", index_col=0).reindex(genes)
+    chrom, pos = tss["chr"].to_numpy(), tss["tss"].to_numpy()
+    out = {}
+    for t, (lfc, r) in changes.items():
+        new = lfc.copy()
+        if t in tss.index and isinstance(tss.loc[t, "chr"], str):
+            d = np.abs(pos - tss.loc[t, "tss"])
+            same = (chrom == tss.loc[t, "chr"]) & (genes != t)
+            new[same & (d < far)] = np.minimum(new[same & (d < far)], own_drop / 2)
+            new[same & (d < near)] = np.minimum(new[same & (d < near)], own_drop)
+        out[t] = (new, r)
+    return out
+
+
 def context_stats(X):
     """Control share, per-cell totals and per-gene overdispersion from control cells X."""
     X = sp.csr_matrix(X, dtype=np.float64)
@@ -236,7 +254,8 @@ def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "transfer_a05"
     alpha = float(sys.argv[2]) if len(sys.argv) > 2 else ALPHA
     gamma = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
-    hc = float(sys.argv[4]) if len(sys.argv) > 4 else None
+    hc = float(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[4] != "none" else None
+    nb = len(sys.argv) > 5 and sys.argv[5] == "nb"
     genes = pd.read_csv(CTRL_DIR / "gene_names.csv")["gene_name"].to_numpy(str)
     targets = pd.read_csv(CTRL_DIR / "pert_counts.csv")["target_gene"].to_numpy(str)
     gidx = {g: i for i, g in enumerate(genes)}
@@ -249,6 +268,8 @@ def main():
     changes = recenter({t: target_change(t, gidx, src, alpha) for t in targets}, gidx, gamma)
     if hc is not None:  # H1's typical change (see MODEL.md)
         changes = add_common(changes, gidx, line_common(genes, "h1"), hc)
+    if nb:  # neighbouring genes drop too (see add_neighbours)
+        changes = add_neighbours(changes, genes, src[5])
 
     def blocks():
         for c in CONTEXTS:

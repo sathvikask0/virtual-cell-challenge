@@ -11,10 +11,11 @@ Commands:
                                             write data/local_eval/LINE/{real.h5ad, ctrl_input.h5ad},
                                             build the official baseline (0 end of the scale) and,
                                             with --bundle, the replicate (1 end; >2 h on a laptop)
-  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1] [phi_scale=1] [hc=W]
+  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1] [phi_scale=1] [hc=W] [nb=1]
                                             (k, kt, gamma: options of predict_2026.py;
                                              phi_scale: multiply the sampler's overdispersion;
-                                             hc: add W x H1's typical change, from non-test knockdowns)
+                                             hc: add W x H1's typical change, from non-test knockdowns;
+                                             nb: neighbouring genes drop too)
                                             write a transfer prediction and score it
 
 LINE: h1 (VCC 2025, per-cell) or hepg2 / jurkat (Nadig 2025, per-cell).
@@ -29,7 +30,7 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 
-from predict_2026 import (SOURCES, add_common, context_stats, line_common, recenter, sample_cells,
+from predict_2026 import (SOURCES, add_common, add_neighbours, context_stats, line_common, recenter, sample_cells,
                           source_changes, target_change)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -97,7 +98,7 @@ def setup(line):
               "--preset", "vcc2026", "--force")
 
 
-def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc=None):
+def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc=None, nb=0):
     out = ROOT / "data/local_eval" / line
     real = ad.read_h5ad(out / "real.h5ad", backed="r")
     genes = np.array(real.var_names, dtype=str)
@@ -117,6 +118,8 @@ def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc
     changes = recenter(changes, gidx, gamma)
     if hc is not None:  # typical change of H1, from knockdowns outside the test set
         changes = add_common(changes, gidx, line_common(genes, "h1", exclude=targets), hc)
+    if nb:  # neighbouring genes drop too
+        changes = add_neighbours(changes, genes, src[5])
     for t in targets:
         lfc, r = changes[t]
         s = np.clip((share + eps) * np.exp(lfc) - eps, 0, None)
