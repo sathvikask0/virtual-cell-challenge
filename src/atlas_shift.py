@@ -23,6 +23,7 @@ Commands:
   python src/atlas_shift.py local LINE NAME [ac=0.6] [ab=0.3] [pool=4]   predict + score (as local_eval)
   python src/atlas_shift.py submission NAME [ac=0.6] [ab=0.3] [pool=4]   build data/submissions/NAME.vcc
 """
+import os
 import sys
 from pathlib import Path
 
@@ -36,6 +37,8 @@ from third_party.atlasshift_model import apply_promoter_prior, desired_mean, dua
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/atlas_shift"
 WEIGHTS = {"k562": 2.0, "h1": 2.0, "hct116": 1.0, "hek293t": 1.0}
+if os.environ.get("ATLAS_K562") == "cpm":  # K562 from the per-cell file (src/k562_cells.py)
+    WEIGHTS = {("k562_cpm" if k == "k562" else k): w for k, w in WEIGHTS.items()}
 PRIOR = 1e5
 CHUNK = 1000
 
