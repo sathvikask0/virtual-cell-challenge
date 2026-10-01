@@ -275,3 +275,29 @@ Finding: the public lines barely cover the 2026 targets. K562 covers 272 of 300,
 The 2026 contexts' control cells correlate with H1 at 0.50/0.63/0.71 (A/B/C) and with K562 at 0.33/0.22/0.31.
 So the typical knockdown response we copy comes from the wrong cell type. Testing H1's typical response
 plus K562's target-specific part (math in [MODEL.md](MODEL.md)).
+
+H1 typical response + K562 specific part (MODEL.md), H1 relative to baseline:
+
+| method | H1 | pds | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|
+| alpha 1 (bar) | 0.178 | 0.66 | −0.16 | 0.47 | 0.02 | 0.08 |
+| alpha 1 + H1 typical | 0.162 | 0.47 | −0.12 | 0.47 | 0.06 | 0.08 |
+| alpha 0.5 + H1 typical | 0.134 | 0.33 | 0.01 | 0.38 | 0.03 | 0.05 |
+
+- Worse. Adding the same typical change to every target makes their predictions alike, so telling them apart (pds) drops sharply.
+  The significant-gene scores gain little (reach +0.04). pds wants only each target's own part.
+
+Fast offline check (seconds, not an hour): 280 H1 targets that are also in K562. We predict H1's change from K562's,
+and for each target count the share of other targets whose true profile is closer than its own
+(cosine, log1p CP10k, own gene excluded; lower is better; this is close to pds):
+
+| K562 profile used | share closer (lower better) |
+|---|---|
+| raw | 0.133 |
+| centered (gamma 0) | 0.124 |
+| averaged with its 5–50 most similar knockdowns | 0.157–0.161 |
+| genes with abs(z) < 1 / 2 / 3 set to 0 | 0.132 / 0.142 / 0.170 |
+| capped at ±0.5 / ±1 | 0.141 / 0.133 |
+
+- Every cleanup that pulls profiles together or drops weak genes makes targets harder to tell apart.
+  The raw (or centered) K562 profile is as good as it gets from K562 alone.
