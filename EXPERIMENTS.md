@@ -301,3 +301,19 @@ and for each target count the share of other targets whose true profile is close
 
 - Every cleanup that pulls profiles together or drops weak genes makes targets harder to tell apart.
   The raw (or centered) K562 profile is as good as it gets from K562 alone.
+
+Neighboring genes drop too (genes starting within 1 kb of the target set to the typical own drop, within 5 kb to half of it;
+`add_neighbours`, gene positions from UCSC refGene). H1, relative to baseline:
+
+| method | H1 | pds | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|
+| alpha 1 (bar) | 0.178 | 0.664 | −0.16 | 0.47 | 0.02 | 0.08 |
+| alpha 1 + neighbors | 0.180 | 0.677 | −0.16 | 0.47 | 0.02 | 0.08 |
+| alpha 1, gamma 0 + neighbors | 0.180 | 0.688 | −0.16 | 0.46 | 0.02 | 0.08 |
+
+- pds up 0.01–0.02. Overall +0.002, about twice the seed noise (~0.001). Small but consistent; kept as a default add-on, not submitted alone.
+- Fast-check intervals (136 targets, paired bootstrap): K562 → H1 linear map −0.008 [−0.026, +0.008]; neighbors 0.000 [−0.024, +0.026].
+  The fast check is too noisy for changes this small.
+
+Next source: X-Atlas/Orion (Xaira 2025), genome-wide CRISPRi in HCT116 and HEK293T, per-cell parquet on Hugging Face (~127 GB).
+Each batch mixes all targets (one test batch: 18.5k cells, 10k targets, 168 of the 2026 targets).
