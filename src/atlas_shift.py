@@ -21,6 +21,7 @@ mean CPM (#82 uses per-cell CPM statistics).
 Commands:
   python src/atlas_shift.py build                 cache centered source changes (data/atlas_shift/)
   python src/atlas_shift.py local LINE NAME [ac=0.6] [ab=0.3] [pool=4]   predict + score (as local_eval)
+  python src/atlas_shift.py submission NAME [ac=0.6] [ab=0.3] [pool=4]   build data/submissions/NAME.vcc
 """
 import sys
 from pathlib import Path
@@ -196,9 +197,39 @@ def local(line, name, ac=0.6, ab=0.3, pool=4):
     print(pd.read_csv(out / f"score_{name}.csv").to_string())
 
 
+def build_2026(name, ac=0.6, ab=0.3, pool=4):
+    """The 2026 submission: 300 targets x 400 cells x contexts A, B, C, packaged as .vcc."""
+    import predict_2026 as P
+    genes = genes26()
+    targets = pd.read_csv(ROOT / "data/vcc/controls/pert_counts.csv")["target_gene"].to_numpy(str)
+    pool = int(pool)
+
+    def blocks():
+        for k, c in enumerate(P.CONTEXTS):
+            a = ad.read_h5ad(P.CTRL_DIR / f"context_{c}.h5ad")
+            assert list(a.var_names) == list(genes)
+            m, q, tpl, depths = control_stats(a.X, P.CELLS, pool, P.SEED + k)
+            dc, db = profiles(list(targets), genes, m, q, ac, ab)
+            for i, t in enumerate(targets):
+                x = dual_moment_counts(tpl, dc[i], db[i], depths=depths, seed=P.SEED + 1000 * k + i)
+                yield sp.csr_matrix(x.astype(np.float32))
+                if (i + 1) % 50 == 0:
+                    print(f"  context {c}: {i + 1}/{len(targets)} targets", flush=True)
+
+    out = ROOT / "data/submissions"
+    h5 = out / f"{name}.h5ad"
+    n_obs, nnz = P.write_h5ad(h5, genes, targets, blocks())
+    print(f"wrote {h5} ({n_obs:,} cells, {nnz:,} nonzeros, {nnz / n_obs:,.0f} per cell)", flush=True)
+    P.package(h5, out / f"{name}.vcc", n_obs, len(genes), nnz)
+    print(f"packaged {out / f'{name}.vcc'}", flush=True)
+
+
 if __name__ == "__main__":
     if sys.argv[1] == "build":
         build()
+    elif sys.argv[1] == "submission":
+        opts = dict(a.split("=") for a in sys.argv[3:])
+        build_2026(sys.argv[2], **{k: float(v) for k, v in opts.items()})
     else:
         opts = dict(a.split("=") for a in sys.argv[4:])
         local(sys.argv[2], sys.argv[3], **{k: float(v) for k, v in opts.items()})

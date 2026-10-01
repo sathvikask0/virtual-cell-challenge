@@ -352,3 +352,18 @@ Fast check: cosine to H1's true profile 0.078 → 0.121; pds-like −0.010 [−0
 - Worse. The learned changes are closer to the truth on average but blander: targets look more alike (pds)
   and fewer genes come out clearly changed in the right direction (fid). Same lesson as Codex's learned
   shrinkage / PCA-ridge. Dropped.
+
+Public #82 recipe on our sources (`src/atlas_shift.py`; generator vendored from kaipengm2/Virtual-Cell-Challenge-2026, MIT):
+two targets per knockdown, per-cell-normalized mean scaled 0.6 and pooled profile scaled 0.3 (clipped at ±3);
+centered sources weighted K562 2, H1 2, HCT116 1, HEK293T 1 (H1 excluded locally); promoter-neighbor prior;
+cells = 4-control-cell templates reweighted to hit both targets exactly. H1, relative to baseline:
+
+| method | H1 | pds | mse | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|---|
+| alpha 1 + neighbors (previous best) | 0.180 | 0.68 | 0 | −0.16 | 0.46 | 0.02 | 0.08 |
+| vetted K562 controls + neighbors, alpha 1 | 0.178 | 0.66 | 0 | −0.16 | 0.47 | 0.02 | 0.08 |
+| **#82 recipe (0.6 / 0.3)** | **0.205** | 0.71 | 0.009 | −0.02 | 0.44 | 0.02 | 0.07 |
+
+- First clear gain: +0.025 (~25x seed noise). It comes from pds, nmae and, for the first time, mse above 0.
+  Scaling the two targets separately avoids the shrink trade-off we kept hitting with a single alpha.
+- Vetted controls + neighbor rule don't stack (0.178).
