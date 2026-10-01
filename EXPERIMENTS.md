@@ -428,3 +428,8 @@ Why fid/jac are ~0 (H1, current best ac 1.0 / ab 0.5, per-gene DE tables saved w
   still sets the denominator. Keeping every change (current best) stays best.
 - Codex: CD4 T-cell source (weight 0.5, `src/atlas_cd4.py`) at ac 1.0 / ab 0.5: H1 0.2235 vs 0.2174 / 0.2185 (two seeds)
   = +0.005; pds +0.017, mse +0.015, fid/reach/jac flat.
+- Gene-similarity idea (predict change only for genes similar to the target): offline AUC for picking H1's truly
+  significant genes per target (132 targets): expression level 0.646; transferred change x sqrt(expression) 0.607;
+  co-expression with target in input controls 0.549; size of transferred change 0.529; K562 knockdown-profile
+  similarity 0.507; general responsiveness in sources 0.481. Which genes become significant is mostly statistical power
+  (expression), which our generator already gets from real control cells. Similarity adds little. Not pursued.
