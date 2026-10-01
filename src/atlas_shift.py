@@ -188,7 +188,8 @@ def local(line, name, ac=0.6, ab=0.3, pool=4):
     p = out / f"pred_{name}.h5ad"
     pred.write_h5ad(p)
     print(f"{line}/{name}: ac={ac}, ab={ab}, pool={pool}", flush=True)
-    le.cell_eval("run", "-ap", p, "-ar", out / "real.h5ad", "--preset", "vcc2026", "-o", out / f"run_{name}")
+    le.cell_eval("run", "-ap", p, "-ar", out / "real.h5ad", "--preset", "vcc2026", "-o", out / f"run_{name}",
+                 "--cache-real", out / "real_cache", "--cache-pred", out / f"cache_{name}")
     ref = (["--real-bundle", out / "bundle"] if (out / "bundle").exists() else
            ["--baseline-agg", out / "baseline/baseline_agg.csv",
             "--baseline-meta", out / "baseline/baseline_meta.json"])
