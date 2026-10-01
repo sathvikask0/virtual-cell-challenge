@@ -378,3 +378,5 @@ Tuning the two scales (H1, relative to baseline):
 
 - The per-cell scale drives the significant-gene scores (fid, reach, jac); 1.0 beats 0.6 by ~0.01.
   The pooled scale trades mse against pds. Testing ac 1.5.
+- ac 1.5 fails: the generator can't hit both targets when they pull too far apart ("Moment fitting failed").
+  ac 1.0 / ab 0.5 is the setting.
