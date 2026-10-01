@@ -380,3 +380,5 @@ Tuning the two scales (H1, relative to baseline):
   The pooled scale trades mse against pds. Testing ac 1.5.
 - ac 1.5 fails: the generator can't hit both targets when they pull too far apart ("Moment fitting failed").
   ac 1.0 / ab 0.5 is the setting.
+- Seed check of ac 1.0 / ab 0.5: seed 1 = 0.2185 vs seed 0 = 0.2174 (same parts within 0.007). Confirmed.
+  Built as `data/submissions/as_c10_b05.vcc` (validated: 360k cells, 300 targets x 400 x A/B/C, 2.42e9 nonzeros).
