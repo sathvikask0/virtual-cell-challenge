@@ -46,13 +46,11 @@ These are independent, so they should stack. Neither is big enough to submit alo
 | logbulk effect space; batch-corrected K562 | worse or tie | Codex |
 | X-Atlas HCT116/HEK293T as extra sources | much worse than K562 alone at predicting H1, HCT116 or HEK293T; adding them to K562 is noise | Claude |
 | batch-matched controls for X-Atlas | no change in split-half agreement | Claude |
+| gradient boosting cross-line model (src/gbm.py) | H1 0.089 / 0.162 (rescaled) vs 0.180; closer on average but blander, pds and fid drop | Claude |
 
 ## In progress
 
-- Claude: gradient boosting (`src/gbm.py`) that learns how a change carries over between lines (K562, HCT116,
-  HEK293T, RPE1, HepG2, Jurkat as destinations; 2026 and H1 targets excluded from training).
-  Fast check: cosine to H1's true profile 0.078 → 0.121; pds-like −0.010 [−0.036, +0.016].
-  Full H1 runs `gbm1` / `gbm2` running.
+- Claude: stacking vetted K562 controls (`core=1`, Codex's k562_core.npz) + neighbor rule on H1.
 - Codex: similarity-weighted sources (HepG2 0.197 vs 0.188); H1 confirmation queued.
   Note that for 2026 this only affects the 25 H1-covered targets, unless X-Atlas lines are added as sources.
 

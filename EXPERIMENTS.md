@@ -338,3 +338,17 @@ closer (lower is better); paired bootstrap 95% interval vs K562:
   K562 and HCT116 profiles of the same target barely agree (the right target ranks behind 26% of others).
 - Knockdown effects are mostly cell-type specific, so more unrelated cell types don't help. Not run on the full H1 test.
 - Caveat: the 2025 H1 targets may have been chosen with K562 in mind, which would favor K562 on this check.
+
+Gradient boosting cross-line model (`src/gbm.py`): 2.5M rows (destination line, target, gene) over K562, HCT116, HEK293T,
+RPE1, HepG2 and Jurkat; label = destination's centered change; 2026 and H1 targets excluded from training.
+Fast check: cosine to H1's true profile 0.078 → 0.121; pds-like −0.010 [−0.036, +0.016]. Full H1 test:
+
+| method | H1 | pds | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|
+| alpha 1 + neighbors (bar) | 0.180 | 0.68 | −0.16 | 0.46 | 0.02 | 0.08 |
+| GBM changes | 0.089 | 0.54 | −0.06 | 0.06 | −0.01 | 0.01 |
+| GBM rescaled to K562 size | 0.162 | 0.63 | −0.15 | 0.38 | 0.05 | 0.06 |
+
+- Worse. The learned changes are closer to the truth on average but blander: targets look more alike (pds)
+  and fewer genes come out clearly changed in the right direction (fid). Same lesson as Codex's learned
+  shrinkage / PCA-ridge. Dropped.
