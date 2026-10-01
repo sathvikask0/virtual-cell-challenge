@@ -423,3 +423,8 @@ Why fid/jac are ~0 (H1, current best ac 1.0 / ab 0.5, per-gene DE tables saved w
   |change| > 0.5 and 3 agree 0.82 (22 per target).
 - Testing: per-cell target keeps only changes > 0.25 where all 3 sources agree; pooled target unchanged
   (`as_ag3_p4`, `as_ag3_p2`).
+- Source-agreement mask on the per-cell target: worse (0.161 pool 4, 0.149 pool 2; fid 0.26 / 0.17 vs 0.47).
+  fid also rewards how many correct calls we make: fewer calls gave fewer correct ones while the true count
+  still sets the denominator. Keeping every change (current best) stays best.
+- Codex: CD4 T-cell source (weight 0.5, `src/atlas_cd4.py`) at ac 1.0 / ab 0.5: H1 0.2235 vs 0.2174 / 0.2185 (two seeds)
+  = +0.005; pds +0.017, mse +0.015, fid/reach/jac flat.
