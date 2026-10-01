@@ -11,13 +11,14 @@ Commands:
                                             write data/local_eval/LINE/{real.h5ad, ctrl_input.h5ad},
                                             build the official baseline (0 end of the scale) and,
                                             with --bundle, the replicate (1 end; >2 h on a laptop)
-  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1] [phi_scale=1] [hc=W] [nb=1] [km=LAM] [gbm=1|2]
+  python src/local_eval.py predict LINE NAME [alpha=0.5] [k=K] [kt=KT] [gamma=1] [phi_scale=1] [hc=W] [nb=1] [km=LAM] [gbm=1|2] [core=1]
                                             (k, kt, gamma: options of predict_2026.py;
                                              phi_scale: multiply the sampler's overdispersion;
                                              hc: add W x H1's typical change, from non-test knockdowns;
                                              nb: neighbouring genes drop too;
                                              km: add K562->H1 linear map, ridge LAM;
-                                             gbm: replace changes by src/gbm.py's (2: K562 size))
+                                             gbm: replace changes by src/gbm.py's (2: K562 size);
+                                             core: K562 with vetted control guides (Codex))
                                             write a transfer prediction and score it
 
 LINE: h1 (VCC 2025, per-cell) or hepg2 / jurkat (Nadig 2025, per-cell).
@@ -100,13 +101,16 @@ def setup(line):
               "--preset", "vcc2026", "--force")
 
 
-def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc=None, nb=0, km=None, gbm=None):
+def predict(line, name, alpha=0.5, k=None, kt=None, gamma=1.0, phi_scale=1.0, hc=None, nb=0, km=None, gbm=None, core=0):
     out = ROOT / "data/local_eval" / line
     real = ad.read_h5ad(out / "real.h5ad", backed="r")
     genes = np.array(real.var_names, dtype=str)
     counts = real.obs["target"].value_counts()
     targets = [t for t in counts.index if t != CTRL]
-    src = source_changes(genes, [s for s in SOURCES if s != line], k, kt)
+    sources = [s for s in SOURCES if s != line]
+    if core:  # Codex's K562 with the authors' 514 vetted control guides (data/lines/k562_core.npz)
+        sources = ["k562_core" if s == "k562" else s for s in sources]
+    src = source_changes(genes, sources, k, kt)
     gidx = {g: i for i, g in enumerate(genes)}
     ctrl_X = ad.read_h5ad(out / "ctrl_input.h5ad").X
     share, totals, phi = context_stats(ctrl_X)
