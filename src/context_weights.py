@@ -10,6 +10,9 @@ local-eval targets, into data/atlas_shift_x/ (the main caches are untouched).
 Usage (from src/):
   python context_weights.py build
   python context_weights.py local LINE NAME k562=2 h1=2 hct116=1 hek293t=1 cd4=1 [ac=1 ab=.5]
+  python context_weights.py submission NAME A=1 B=0 C=0 [ac=1 ab=.5]
+                                            2026 build with a CD4 weight per context (main caches, default
+                                            source weights); writes data/submissions/NAME.vcc, no upload
 """
 import sys
 from pathlib import Path
@@ -57,9 +60,18 @@ def local(line, name, ac=1.0, ab=0.5, **w):
     A.local(line, name, ac=ac, ab=ab)
 
 
+def submission(name, ac=1.0, ab=0.5, **cd4):
+    for c, w in cd4.items():
+        A.CTX_PROFILES[c] = C.make_profiles(w) if w > 0 else A.profiles
+    print(f"{name}: CD4 weight per context {cd4}, sources {A.WEIGHTS}", flush=True)
+    A.build_2026(name, ac=ac, ab=ab)
+
+
 if __name__ == "__main__":
     if sys.argv[1] == "build":
         build()
+    elif sys.argv[1] == "submission":
+        submission(sys.argv[2], **{k: float(v) for k, v in (a.split("=") for a in sys.argv[3:])})
     else:
         opts = {k: float(v) for k, v in (a.split("=") for a in sys.argv[4:])}
         local(sys.argv[2], sys.argv[3], **opts)

@@ -40,6 +40,7 @@ WEIGHTS = {"k562": 2.0, "h1": 2.0, "hct116": 1.0, "hek293t": 1.0}
 if os.environ.get("ATLAS_K562") == "cpm":  # K562 from the per-cell file (src/k562_cells.py)
     WEIGHTS = {("k562_cpm" if k == "k562" else k): w for k, w in WEIGHTS.items()}
 PRIOR = 1e5
+CTX_PROFILES = {}  # context -> profiles function, overrides `profiles` for that 2026 context
 CHUNK = 1000
 
 
@@ -283,7 +284,7 @@ def build_2026(name, ac=0.6, ab=0.3, pool=4):
             a = ad.read_h5ad(P.CTRL_DIR / f"context_{c}.h5ad")
             assert list(a.var_names) == list(genes)
             m, q, tpl, depths = control_stats(a.X, P.CELLS, pool, P.SEED + k)
-            dc, db = profiles(list(targets), genes, m, q, ac, ab)
+            dc, db = CTX_PROFILES.get(c, profiles)(list(targets), genes, m, q, ac, ab)
             for i, t in enumerate(targets):
                 x = dual_moment_counts(tpl, dc[i], db[i], depths=depths, seed=P.SEED + 1000 * k + i)
                 yield sp.csr_matrix(x.astype(np.float32))

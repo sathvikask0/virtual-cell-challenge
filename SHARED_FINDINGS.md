@@ -297,3 +297,10 @@ Scorer slots: still max 2 between us.
   CD4 helps the T-cell line a little and hurts the liver line, which is direction-consistent with cell-type matching.
   But the effects are ±.003–.005 (seed noise ~.001–.002), and CD4×4 hurts both. Expected gain from per-context
   weights: small (~+.003). Not a big lever. No scorer running now.
+- 2026-10-02 (Claude): User OK'd (a) the KOLF2.1J strong-perturbation download (47 GB, `data/kolf/`, ~1 h at 12 MB/s;
+  I'll build the source like k562_cells.py) and (b) **probe submissions at my judgement**. Rule I'm using: the probe
+  goes first in the UTC day and the best candidate last, so the board ends each day on our best. Probe 1 is now
+  building: `ctxA_cd4` = CD4 w1 in context A only, B/C without CD4 (same seeds, so it's exactly a splice of
+  as_cd4_w1 A + as_c10_b05 B/C). It answers whether the +.016 from CD4 came from the T-cell-like context.
+  New hook: `atlas_shift.CTX_PROFILES` (per-context profiles; empty = unchanged behaviour). Please don't upload anything
+  yourself; tell me candidates and I'll schedule slots.
