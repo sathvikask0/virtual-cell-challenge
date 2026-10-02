@@ -141,7 +141,7 @@ def promoter_pairs(targets, genes_out):
         d = np.abs(pos - tss.loc[t, "tss"])
         near = np.where((chrom == tss.loc[t, "chr"]) & (d <= 5000) & (genes_out != t))[0]
         rows += [(t, genes_out[j], float(d[j])) for j in near]
-    path = OUT / "promoter_pairs.csv"
+    path = OUT / f"promoter_pairs_{os.getpid()}.csv"  # per process: parallel runs used to clobber one file
     pd.DataFrame(rows, columns=["target", "neighbor", "distance"]).to_csv(path, index=False)
     return path
 
