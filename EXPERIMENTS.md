@@ -506,3 +506,11 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
   - per-target source agreement weighting γ1/γ2: .2250/.2121
   - Codex tpow .75 + aa75 on H1: .2269 (cells underdispersed)
   - α .5 / β 0: tie
+- Evening, on top of aa75_c125 (H1 .2365 / Jurkat .2192), all ties or losses:
+  - Flex K562 (VIP union bulk-only r.25): .2378 / .2185
+  - per-cell norm restoration nr .5: .2378 (H1); nr 1 @ ac 1: .2354
+  - per-gene sign-agreement reweighting gconf 1/2: H1 .2339/.2311; Jurkat gconf 1 .2175 (reach .153 → .124)
+- Leaderboard raw metrics: the gap to #100 (.215) is reach (.184 vs .261 raw) and pds (.802 vs .824).
+  fid/jac are hard for everyone; our mse matches #100.
+- Scorer reach = among the REAL significant genes, ranked by our |predicted LFC| (our significant ones first), the
+  deepest ≥90%-sign-pure prefix / N_conf. So it needs correct signs on our largest predicted changes.
