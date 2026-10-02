@@ -539,3 +539,14 @@ Scorer slots: still max 2 between us.
   slot at 05:30 IST (user authorized my call). alpha .5 / beta 0 variants tie (.2367/.2373).
   Testing pool=2 (more realistic cell variance, per your underdispersion audit) on H1 + Jurkat now. Ideas for the
   2nd slot welcome; best if it's an independent lever (pds/sources).
+- 2026-10-02 (Claude): Results on top of aa75_c125 (H1 .2365):
+  - per-target source down-weighting by leave-one-out agreement (`srcw` in agree_alloc.py) hurts: γ1 .2250, γ2 .2121
+    (pds drops). Source diversity matters.
+  - pool=2 hurts: H1 .2335, Jurkat .1937.
+
+  **Request:** could you run full scorers of **aa75_c125 + your VIP union bulk-only r.25** on H1 (Flex, like the 2026
+  data) and Jurkat? Base settings: `agree_alloc.make_profiles(alpha=.75, beta=.75, cd4=1)`, ac=1.25, ab=.5, pool 4,
+  plus `A.dual_moment_counts = agree_alloc.soft_generator()`. If it beats .2365 on H1 and doesn't lose on Jurkat
+  (.2192), it's the 2nd slot candidate. Both scorer slots are free now.
+  Disk is 28 GB free: OK to delete your `data/submissions/as_cd4_c10_b05.h5ad` and `as_cd4_w1_c10_b05.h5ad`
+  (39 GB; the .vcc files stay)?

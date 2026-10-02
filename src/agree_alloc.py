@@ -88,7 +88,53 @@ def soft_generator():
     return gen
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0):
+def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
+    """Fused (E_c, E_b) with per-target source weights W_s * max(c_s, floor)^gamma, where c_s is the cosine of
+    source s with the mean of the other sources for that target (leave-one-out agreement)."""
+    g26 = {g: i for i, g in enumerate(A.genes26())}
+    cols = np.array([g26.get(g, -1) for g in genes])
+    EC, EB, W = [], [], []
+    for line, w in A.WEIGHTS.items():
+        if line in exclude:
+            continue
+        d = np.load(A.OUT / f"{line}.npz")
+        rows = {t: i for i, t in enumerate(d["targets"])}
+        c = np.full((len(targets), len(genes)), np.nan, np.float32)
+        b = c.copy()
+        for i, t in enumerate(targets):
+            if t in rows:
+                c[i] = np.where(cols >= 0, d["ec"][rows[t]][np.maximum(cols, 0)], np.nan)
+                b[i] = np.where(cols >= 0, d["eb"][rows[t]][np.maximum(cols, 0)], np.nan)
+        EC.append(c); EB.append(b); W.append(w)
+    if cd4 > 0:
+        c = source_rows(targets, genes, exclude)[-1]
+        base = 50000 * np.asarray(q)
+        EC.append(c)
+        EB.append(np.log1p(base[None, :] * np.exp2(np.clip(c, -10, 10))) - np.log1p(base[None, :]))
+        W.append(cd4)
+    own = np.array([genes == t for t in targets])
+    S = len(EC)
+    unit = [np.where(np.isfinite(x) & ~own, x, 0) for x in EC]
+    unit = [u / (np.linalg.norm(u, axis=1, keepdims=True) + 1e-12) for u in unit]
+    present = [np.isfinite(x).any(1) for x in EC]
+    wt = np.zeros((S, len(targets)))
+    for k in range(S):
+        others = sum(unit[j] for j in range(S) if j != k)
+        cs = (unit[k] * others).sum(1) / (np.linalg.norm(others, axis=1) + 1e-12)
+        nother = sum(present[j] for j in range(S) if j != k)
+        cs = np.where(nother > 0, cs, 1.0)  # a lone source keeps its weight
+        wt[k] = np.where(present[k], W[k] * np.maximum(cs, floor) ** gamma, 0)
+    num_c = sum(wt[k][:, None] * np.nan_to_num(EC[k]) for k in range(S))
+    num_b = sum(wt[k][:, None] * np.nan_to_num(EB[k]) for k in range(S))
+    den = sum(wt[k][:, None] * np.isfinite(EC[k]) for k in range(S))
+    ec = np.where(den > 0, num_c / np.maximum(den, 1e-12), 0).astype(np.float32)
+    eb = np.where(den > 0, num_b / np.maximum(den, 1e-12), 0).astype(np.float32)
+    rel = wt / np.maximum(wt.sum(0, keepdims=True), 1e-12)
+    print(f"  source weighting gamma={gamma}: mean weight share per source {np.round(rel.mean(1), 3)}", flush=True)
+    return ec, eb
+
+
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -103,7 +149,9 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0):
                     if t in ti:
                         den[i] += w * ((cols >= 0) & np.isfinite(d["ec"][ti[t]][np.maximum(cols, 0)]))
         rows = source_rows(targets, genes, exclude)
-        if cd4 > 0:
+        if srcw > 0:
+            ec, eb = weighted_fusion(targets, genes, exclude, q, cd4, srcw)
+        elif cd4 > 0:
             ec, eb = C.add_cd4(ec, eb, den, rows[-1], q, cd4)
         own = np.array([genes == t for t in targets])
         A_t = agreement(rows if cd4 > 0 else rows[:-1], own)
