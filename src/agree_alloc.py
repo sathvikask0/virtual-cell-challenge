@@ -14,6 +14,7 @@ Usage (from src/):
   (tpow: Codex's template variance power; x=1: caches incl. Jurkat/HepG2 targets)
   python agree_alloc.py submission NAME [same options]
 """
+import os
 import sys
 
 import numpy as np
@@ -134,7 +135,7 @@ def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
     return ec, eb
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -165,6 +166,26 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
         profiles.A = A_t
         print(f"  agreement A: median {np.median(A_t):.3f}; scale s: min {s.min():.2f} median {np.median(s):.2f} "
               f"max {s.max():.2f}", flush=True)
+        if nr:  # per-cell norm restoration: fused change rescaled toward the typical single-source size, ^nr
+            srcs = rows if cd4 > 0 else rows[:-1]
+            norms = np.array([np.linalg.norm(np.where(np.isfinite(x) & ~own, x, 0), axis=1) for x in srcs])
+            have = np.array([np.isfinite(x).any(1) for x in srcs])
+            single = (norms * have).sum(0) / np.maximum(have.sum(0), 1)
+            r = np.clip(single / (np.linalg.norm(np.where(own, 0, ec), axis=1) + 1e-9), 1, nrmax) ** nr
+            print(f"  norm restoration: ratio median {np.median(r):.2f}, max {r.max():.2f}", flush=True)
+            ec = np.where(own, ec, ec * r[:, None])
+        if gconf:  # per gene: sign agreement across sources |sum_s e_s| / sum_s |e_s| in [0,1], ^gconf, target norm kept
+            srcs = rows if cd4 > 0 else rows[:-1]
+            num = np.abs(sum(np.nan_to_num(x) for x in srcs))
+            den = sum(np.abs(np.nan_to_num(x)) for x in srcs)
+            nsrc = sum(np.isfinite(x) for x in srcs)
+            agr = np.where(nsrc >= 2, num / np.maximum(den, 1e-12), 0.5)
+            w = agr ** gconf
+            E0 = np.where(own, 0, ec)
+            E1 = E0 * w
+            k = np.linalg.norm(E0, axis=1) / (np.linalg.norm(E1, axis=1) + 1e-12)
+            print(f"  gene confidence: median agreement {np.median(agr[nsrc >= 2]):.2f}, norm rescale median {np.median(k):.2f}", flush=True)
+            ec = np.where(own, ec, E1 * k[:, None])
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:
@@ -198,6 +219,11 @@ if __name__ == "__main__":
             varied = mean * np.power(ratio, tpow)
             return m, q, varied / varied.sum(1, keepdims=True), depths
         A.control_stats = stats
+    if os.environ.get("ATLAS_OUT"):  # e.g. Codex's VIP blend cache (data/viperturb/atlas_mix_*); built on atlas_shift_x
+        from pathlib import Path
+        A.OUT = Path(os.environ["ATLAS_OUT"])
+        C.PATH = A.ROOT / "data/atlas_shift_x/cd4_de.npz"
+        print(f"source caches from {A.OUT}", flush=True)
     if o.pop("x", 0):
         import context_weights as CW
         CW.use_x()
