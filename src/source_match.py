@@ -27,7 +27,7 @@ for line in sys.argv[1:]:
         if t in gi: ec[i, gi[t]] = np.nan
     ec -= np.nanmean(ec, 0)
     expressed = 1e6 * p0 > 20
-    srcs = dict(A.WEIGHTS); srcs["cd4"] = 1
+    srcs = dict(A.WEIGHTS); srcs["cd4"] = 1; srcs["kolf"] = 1
     print(f"== {line}: {len(targets)} targets, {expressed.sum()} genes >20 CPM")
     for s in srcs:
         d = np.load(CW.C.PATH if s == "cd4" else A.OUT / f"{s}.npz", allow_pickle=True)
