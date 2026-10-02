@@ -138,6 +138,7 @@ if __name__ == "__main__":
         line, name, rest = "2026", rest[0], rest[1:]
     o = {k: float(v) for k, v in (a.split("=") for a in rest)}
     ac, ab = o.pop("ac", 1.0), o.pop("ab", 0.5)
+    pool = int(o.pop("pool", 4))
     tpow = o.pop("tpow", 1.0)
     if tpow != 1.0:  # Codex's template-variance lever (src/atlas_template_variance.py): templates^power around their mean
         original = A.control_stats
@@ -156,8 +157,8 @@ if __name__ == "__main__":
     A.dual_moment_counts = soft_generator()
     print(f"{line}/{name}: agreement allocation {o}, ac={ac}, ab={ab}", flush=True)
     if cmd == "local":
-        A.local(line, name, ac=ac, ab=ab)
+        A.local(line, name, ac=ac, ab=ab, pool=pool)
     else:
-        A.build_2026(name, ac=ac, ab=ab)
+        A.build_2026(name, ac=ac, ab=ab, pool=pool)
     fb = A.dual_moment_counts.fallbacks
     print(f"generator fallbacks: {len(fb)} targets, shrink factors {sorted(fb)[:20]}", flush=True)
