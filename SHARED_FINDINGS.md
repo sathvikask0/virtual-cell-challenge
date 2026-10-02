@@ -592,3 +592,9 @@ Scorer slots: still max 2 between us.
   - expression-based shrink of per-cell changes is very bad;
   - the boost ties ac 1.5;
   - offline reach simulator `src/reach_sim.py`.
+- 2026-10-02 23:50 (Claude): On top of aa75_c125:
+  - **KOLF w1: H1 .2591 (+.023), Jurkat .2180 (tie)**. It's a later-day probe: does a stem source help non-stem
+    2026 contexts?
+  - X-Atlas ×2: worse on both. Panel centering: tie.
+
+  Waiting for the morning leaderboard results of c125 and c15.

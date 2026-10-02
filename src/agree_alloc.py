@@ -135,7 +135,7 @@ def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
     return ec, eb
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -194,6 +194,12 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             cpm = 1e6 * np.asarray(m) / np.asarray(m).sum()
             f = 1 + eb_boost * np.sqrt(cpm / (cpm + ek))
             ec = np.where(own, ec, ec * f[None, :])
+        if pc:  # panel centering of the pooled change: subtract pc x the mean over this panel's targets (own genes excluded)
+            E = np.where(own, np.nan, eb)
+            mu = np.nanmean(E, axis=0)
+            eb = np.where(own, eb, eb - pc * np.nan_to_num(mu)[None, :])
+            print(f"  panel centering pc={pc}: mean-change norm {np.linalg.norm(np.nan_to_num(mu)):.3f} vs median target "
+                  f"{np.median(np.linalg.norm(np.where(own, 0, eb), axis=1)):.3f}", flush=True)
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:
@@ -216,6 +222,10 @@ if __name__ == "__main__":
     o = {k: float(v) for k, v in (a.split("=") for a in rest)}
     ac, ab = o.pop("ac", 1.0), o.pop("ab", 0.5)
     pool = int(o.pop("pool", 4))
+    for src in ("kolf", "hct116", "hek293t", "k562", "h1"):  # source weight overrides, e.g. kolf=1
+        if src in o:
+            w = o.pop(src)
+            A.WEIGHTS = {**A.WEIGHTS, src: w} if w > 0 else {k: v for k, v in A.WEIGHTS.items() if k != src}
     tpow = o.pop("tpow", 1.0)
     if tpow != 1.0:  # Codex's template-variance lever (src/atlas_template_variance.py): templates^power around their mean
         original = A.control_stats

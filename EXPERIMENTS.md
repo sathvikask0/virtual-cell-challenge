@@ -520,3 +520,7 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
   - boost of well-expressed genes ×(1+.5√(cpm/(cpm+500))): H1 .2364 / Jurkat .2311; boost 1: H1 .2340.
   - **ac 1.5: H1 .2365 (tie) / Jurkat .2319**, so it's the 2nd-slot candidate. Built aa75_c15.vcc (0 fallbacks).
 - Offline reach simulator `src/reach_sim.py` (matches the scorer within ~.003 on H1).
+- Late night, on top of aa75_c125 (H1 .2365 / Jurkat .2192):
+  - panel centering of the pooled change pc .5 / 1: .2371 / .2350 (H1), so a tie
+  - **KOLF w1: H1 .2591 / Jurkat .2180**. Stem→stem gain, tie on Jurkat; candidate for a later day (55/300 panel).
+  - X-Atlas HCT116/HEK293T weight 2: .2275 / .2019, worse.
