@@ -514,3 +514,9 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
   fid/jac are hard for everyone; our mse matches #100.
 - Scorer reach = among the REAL significant genes, ranked by our |predicted LFC| (our significant ones first), the
   deepest ≥90%-sign-pure prefix / N_conf. So it needs correct signs on our largest predicted changes.
+- Night, on top of aa75_c125:
+  - per-cell shrink of weakly expressed genes (ew 500): **H1 .2003 / Jurkat .1700**. Offline re-ranking looked good,
+    but shrinking kills significance calls.
+  - boost of well-expressed genes ×(1+.5√(cpm/(cpm+500))): H1 .2364 / Jurkat .2311; boost 1: H1 .2340.
+  - **ac 1.5: H1 .2365 (tie) / Jurkat .2319**, so it's the 2nd-slot candidate. Built aa75_c15.vcc (0 fallbacks).
+- Offline reach simulator `src/reach_sim.py` (matches the scorer within ~.003 on H1).

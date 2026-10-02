@@ -135,7 +135,7 @@ def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
     return ec, eb
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -186,6 +186,14 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             k = np.linalg.norm(E0, axis=1) / (np.linalg.norm(E1, axis=1) + 1e-12)
             print(f"  gene confidence: median agreement {np.median(agr[nsrc >= 2]):.2f}, norm rescale median {np.median(k):.2f}", flush=True)
             ec = np.where(own, ec, E1 * k[:, None])
+        if ew:  # shrink per-cell changes of genes weakly expressed in this destination: x sqrt(cpm / (cpm + ew))
+            cpm = 1e6 * np.asarray(m) / np.asarray(m).sum()
+            f = np.sqrt(cpm / (cpm + ew))
+            ec = np.where(own, ec, ec * f[None, :])
+        if eb_boost:  # boost per-cell changes of well-expressed genes: x (1 + eb_boost * sqrt(cpm / (cpm + ek)))
+            cpm = 1e6 * np.asarray(m) / np.asarray(m).sum()
+            f = 1 + eb_boost * np.sqrt(cpm / (cpm + ek))
+            ec = np.where(own, ec, ec * f[None, :])
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:
