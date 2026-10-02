@@ -10,7 +10,8 @@ Targets the sources agree on get bigger changes, conflicting ones shrink toward 
 A target with fewer than 2 sources gets the median A.
 
 Usage (from src/):
-  python agree_alloc.py local LINE NAME [alpha=.75] [beta=.75] [cell=0] [cd4=1] [ac=1] [ab=.5]
+  python agree_alloc.py local LINE NAME [alpha=.75] [beta=.75] [cell=0] [cd4=1] [ac=1] [ab=.5] [tpow=1] [x=0]
+  (tpow: Codex's template variance power; x=1: caches incl. Jurkat/HepG2 targets)
   python agree_alloc.py submission NAME [same options]
 """
 import sys
@@ -64,6 +65,29 @@ def agreement(rows, own):
     return np.where(np.isfinite(A_t), A_t, np.nanmedian(A_t))
 
 
+def soft_generator():
+    """Wrap the cell generator: if a target's two moments can't be fit, shrink both toward the templates' own
+    moments by 10% steps until they can (counted in soft_generator.fallbacks)."""
+    fit = A.dual_moment_counts
+
+    def gen(template, probability, bulk_probability, **kw):
+        t = np.asarray(template, float)
+        base_c = (t / np.maximum(t.sum(1, keepdims=True), 1e-12)).mean(0)
+        base_b = t.sum(0) / t.sum()
+        for lam in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.0):
+            try:
+                out = fit(template, base_c + lam * (probability - base_c), base_b + lam * (bulk_probability - base_b), **kw)
+                if lam < 1:
+                    gen.fallbacks.append(lam)
+                return out
+            except ValueError as e:
+                if "Moment fitting failed" not in str(e) and "projection too large" not in str(e):
+                    raise
+        raise RuntimeError("generator failed even with no change")
+    gen.fallbacks = []
+    return gen
+
+
 def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
@@ -114,12 +138,26 @@ if __name__ == "__main__":
         line, name, rest = "2026", rest[0], rest[1:]
     o = {k: float(v) for k, v in (a.split("=") for a in rest)}
     ac, ab = o.pop("ac", 1.0), o.pop("ab", 0.5)
+    tpow = o.pop("tpow", 1.0)
+    if tpow != 1.0:  # Codex's template-variance lever (src/atlas_template_variance.py): templates^power around their mean
+        original = A.control_stats
+
+        def stats(*a, **kw):
+            m, q, tpl, depths = original(*a, **kw)
+            mean = tpl.mean(0)
+            ratio = np.divide(tpl, mean, out=np.zeros_like(tpl), where=mean > 0)
+            varied = mean * np.power(ratio, tpow)
+            return m, q, varied / varied.sum(1, keepdims=True), depths
+        A.control_stats = stats
     if o.pop("x", 0):
         import context_weights as CW
         CW.use_x()
     A.profiles = make_profiles(**o)
+    A.dual_moment_counts = soft_generator()
     print(f"{line}/{name}: agreement allocation {o}, ac={ac}, ab={ab}", flush=True)
     if cmd == "local":
         A.local(line, name, ac=ac, ab=ab)
     else:
         A.build_2026(name, ac=ac, ab=ab)
+    fb = A.dual_moment_counts.fallbacks
+    print(f"generator fallbacks: {len(fb)} targets, shrink factors {sorted(fb)[:20]}", flush=True)
