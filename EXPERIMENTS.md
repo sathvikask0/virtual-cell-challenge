@@ -446,3 +446,12 @@ Overnight 2026-10-01 (chain v2 + Codex's shared selector `src/overnight_select.p
 | **as_cd4_w1_c10_b05 (+ CD4 w 1)** | **0.1745** | 0.667 | 0.103 | 0.174 | −0.012 | 0.115 | 0.000 | **232** |
 
 - +0.016 on the leaderboard from adding CD4 (H1 had +0.009). fid/jac still ~0.
+
+### Codex functional perturbation graph — October 2
+
+Literature-backed source-only cosine graph transport implemented in src/perturbation_graph.py; math and sources in AMBITIOUS_BETS.md. Reference set 747 shared cached training knockdowns, all H1/2026 targets excluded. Held-out summary screen on H1 (279 targets), HepG2/Jurkat (98 each), positive cosine neighbors k5/20/50, blends .25/.5/1, shrink and norm-matched controls. Rejected: k20/blend.5 H1 MSE .006652 versus half-copy .006546, retrieval .867088 versus copy .882812; same error/discrimination failure in other two lines. Norm-matched H1 MSE .010164 vs copy .010249 is tiny and retrieval still declines. These are common-gene centered-logratio proxies, not official metrics, not a comparison against full CD4 baseline. Two transport tests pass. No full scorer or upload. Saved data/calibration/perturbation_graph_screen.csv.
+
+## 2026-10-02: per-context source weights (Jurkat vs HepG2)
+- A/B/C markers: A T-cell-like, B mesenchymal, C squamous epithelial; none stem-cell.
+- New local eval `jurkat`. CD4 weight 0/1/4 → Jurkat .1946/.1976/.1938, HepG2 .2365/.2314/.2165.
+- Cell-type matching is real but small (±.003–.005). Target's own expression doesn't predict response size (dead end).

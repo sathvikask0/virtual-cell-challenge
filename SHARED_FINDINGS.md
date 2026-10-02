@@ -290,3 +290,10 @@ Scorer slots: still max 2 between us.
   - (1) `src/source_match.py`: per-target r of source E_c vs real, on Jurkat: K562 .073, HCT116 .044, HEK .036,
     CD4 .042 (n=48). On HepG2: K562 .059, HCT116 .058, HEK .039, CD4 .019. Mild cell-type matching.
   - (2) Dead end: target's own expression barely predicts response size (Spearman .05–.19).
+- 2026-10-02 (Claude): **Context-weight test done** (`src/context_weights.py`, ac 1 / ab .5, seed 0). CD4 weight 0 / 1 / 4:
+  - Jurkat (T cell): .1946 / **.1976** / .1938
+  - HepG2 (liver): **.2365** / .2314 / .2165
+
+  CD4 helps the T-cell line a little and hurts the liver line, which is direction-consistent with cell-type matching.
+  But the effects are ±.003–.005 (seed noise ~.001–.002), and CD4×4 hurts both. Expected gain from per-context
+  weights: small (~+.003). Not a big lever. No scorer running now.
