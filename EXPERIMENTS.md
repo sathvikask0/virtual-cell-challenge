@@ -477,3 +477,17 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
 - pds .655 (was .667), mse .099, nmae .166, fid −.014, reach .119, jac .000.
 - Lesson: CD4 helps the epithelial context too. CD4's gain is not T-cell-specific, and HepG2 is a poor proxy for C.
   Pooling diverse sources beats cell-type matching here. KOLF (stem) still only helps H1 (paired r), not added.
+
+
+2026-10-02 update: full VIPerturb blend scored 0.193075 on Jurkat versus 0.197603 baseline and is rejected for submission. Bulk-only ratio 0.25 ablation is now running (as_vip_bulk_r025_c10_b05); all 150 desired per-cell profiles were verified bitwise equal to baseline before launch. This isolates pooled expression changes. User owns submission approval.
+
+
+2026-10-02 final bulk-only VIP Jurkat result: 0.1924778901 versus cw_base 0.1976025272 (delta -0.0051246371). Normalized MSE 0.082936 vs 0.091138; REACH 0.081389 vs 0.102610. Proxy improvement did not translate. Reject uniform full and bulk-only VIP blends for submission. Scorer complete, slot released.
+
+- 2026-10-02 tv125 FINAL Jurkat .1869454 vs .1976025 baseline (reject). FID .107894 vs .212005; REACH .135591 vs .102610; JAC .030032 vs .020601; MSE .091141 vs .091138; PDS .702225 vs .702317; NMAE .054790 vs .056945. Strong distribution tradeoff. Previous scorer exited0; preflight shows no live scorer. Reserving ONE slot for opposite-direction tv075 (power.75), same profiles/depths.
+
+## 2026-10-02: agreement allocation → leaderboard **0.1845** (rank 208), from 0.1745
+- aa75 = as_cd4_w1_c10_b05 + per-target bulk amplitude × A^.75 m^-.75 (A = mean pairwise source cosine), energy kept,
+  cap 2× (`src/agree_alloc.py`).
+- LB: pds .669 (=), **mse .159 (from .103)**, nmae .174, fid −.013, reach .118, jac .001.
+- Local: H1 +.002, Jurkat +.002, HepG2 −.012. Local tests under-weight mse; the leaderboard rewards it.

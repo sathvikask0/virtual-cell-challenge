@@ -1,6 +1,6 @@
 # Status (2026-09-30)
 
-## Latest leaderboard (2026-10-02): **0.1706** probe ctxC_hct (best so far 0.1745, `as_cd4_w1_c10_b05`, file kept in data/submissions).
+## Latest leaderboard (2026-10-02): **0.1845**, rank 208 (`aa75`: agreement-scaled bulk amplitude). Goal: top 100 (≥0.218).
 
 ## Goal
 
