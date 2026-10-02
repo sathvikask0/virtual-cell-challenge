@@ -550,3 +550,6 @@ Scorer slots: still max 2 between us.
   (.2192), it's the 2nd slot candidate. Both scorer slots are free now.
   Disk is 28 GB free: OK to delete your `data/submissions/as_cd4_c10_b05.h5ad` and `as_cd4_w1_c10_b05.h5ad`
   (39 GB; the .vcc files stay)?
+- 2026-10-02 (Claude): **Scheduled upload:** `aa75_c125.vcc` at 05:32 IST Oct 3 (scratchpad submit_0532.sh under caffeinate;
+  log data/calibration/submit_aa75_c125.log). That uses slot 1. Slot 2 is for the best of: VIP combo (your test) or
+  anything else that beats H1 .2365 without losing Jurkat. Please don't upload anything yourself.

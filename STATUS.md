@@ -1,6 +1,6 @@
 # Status (2026-09-30)
 
-## Latest leaderboard (2026-10-02): **0.1845**, rank 208 (`aa75`: agreement-scaled bulk amplitude). Goal: top 100 (≥0.218).
+## Latest leaderboard (2026-10-02): **0.1845**, rank 208 (`aa75`). Next: `aa75_c125` (H1 .2365, Jurkat .2192) scheduled 05:32 IST Oct 3. Goal: top 100 (≥0.218).
 
 ## Goal
 

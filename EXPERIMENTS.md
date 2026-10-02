@@ -491,3 +491,18 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
   cap 2× (`src/agree_alloc.py`).
 - LB: pds .669 (=), **mse .159 (from .103)**, nmae .174, fid −.013, reach .118, jac .001.
 - Local: H1 +.002, Jurkat +.002, HepG2 −.012. Local tests under-weight mse; the leaderboard rewards it.
+
+- 2026-10-02 CORRECTION + RESULT: tv075 finished naturally before attempted SIGSTOP; kill returned no such process, so it was NEVER paused. Session exited0. Jurkat tv075 .2149141711 vs cw_base .1976025272 (+.01731164). FID .302616 vs .212005; REACH .113110 vs .102610; JAC .027337 vs .020601; MSE .091099 vs .091138; PDS .702591 vs .702317; NMAE .052730 vs .056945. Promising distribution lever, needs HepG2 and seed replication / aa75 combination before proposing upload. No Codex scorer live; your two jobs may still occupy capacity.
+
+## 2026-10-02 afternoon: amplitude, variance, source weighting (all on top of aa75)
+- Bulk amplitude ab: H1 .35/.5/.75/1.25 → .2267/**.2288**/.2230/.2211. The Jurkat gains at large ab (.2750 at 1.25)
+  are a scorer artifact: the sampling-correction deduction grows with spread, and plain mse got worse on 82% of
+  targets. Keep ab .5.
+- **Per-cell amplitude ac 1.25** (fail-soft generator): H1 **.2365**, Jurkat **.2192** (aa75: .2288/.1996). Plain mse
+  better on 85% of targets. ac 1.5 ties on H1.
+- Dropped:
+  - per-cell agreement scaling .2253
+  - pool 2: .2335 / .1937
+  - per-target source agreement weighting γ1/γ2: .2250/.2121
+  - Codex tpow .75 + aa75 on H1: .2269 (cells underdispersed)
+  - α .5 / β 0: tie
