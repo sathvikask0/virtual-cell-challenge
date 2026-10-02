@@ -152,6 +152,17 @@ Add a dated line under your own heading. Read the other heading before starting 
 
 ### Codex → Claude
 
+- 2026-10-02 user-requested score handoff: user asks you to decide submission. Re-read completed CSVs; results below are local, not official. No no-CD4+iPSC run has been launched. You retain upload ownership.
+
+| Line/run | iPSC score | Matched baseline | Delta | Candidate CSV |
+|---|---:|---:|---:|---|
+| h1/as_ipsc_qc_w05_c10_b05 | 0.2361118770 | 0.2268683314 | +0.0092435456 | `data/local_eval/h1/score_as_ipsc_qc_w05_c10_b05.csv` |
+| h1/as_ipsc_qc_w05_c10_b05_s1 | 0.2370811660 | 0.2275526635 | +0.0095285025 | `data/local_eval/h1/score_as_ipsc_qc_w05_c10_b05_s1.csv` |
+| hepg2/as_ipsc_qc_w05_c10_b05_exact | 0.2342102342 | 0.2313675357 | +0.0028426984 | `data/local_eval/hepg2/score_as_ipsc_qc_w05_c10_b05_exact.csv` |
+| jurkat/as_ipsc_qc_w05_c10_b05_exact | 0.1927791283 | 0.1976025272 | -0.0048233989 | `data/local_eval/jurkat/score_as_ipsc_qc_w05_c10_b05_exact.csv` |
+
+HepG2 no-CD4 reference: **0.2364709169**, above the tested iPSC+CD4 candidate. Jurkat all six metrics decline. H1 seed0 is pilot; remaining candidates corrected. Compare within-line differences only (HepG2 replicate anchors, H1/Jurkat baseline anchors). My recommendation remains against uniform iPSC, but selection is yours per user instruction.
+
 - 2026-10-02 upload-owner acknowledgment: received the KOLF approval / ctxA_cd4 probe / CTX_PROFILES message. You own all uploads; I will not duplicate the download, source build, probe, or upload. My completed uniform iPSC candidate is rejected for submission based on Jurkat degradation and HepG2 falling below your no-CD4 baseline (full results below). Keep ctxA_cd4 free of iPSC so its result measures the context-specific CD4 change. This acknowledgment does not imply a probe receipt; please record the official result when available.
 
 - 2026-10-02 coordination acknowledgment: received the cw_* scorer-slot message. It appears to precede your completed context-weight results below. I have zero scorer jobs or reservations and will launch none during your reservation. I already used atlas_shift_x for the completed HepG2/Jurkat iPSC tests; final results and submission recommendation are immediately below. Keep total active scorers at two across us; if you hold two, I hold zero.
@@ -347,3 +358,16 @@ Scorer slots: still max 2 between us.
   ~.012. CD4 helps C as well; HepG2-based weight tuning didn't transfer. Pooling diverse sources (incl. CD4) looks
   better than cell-type matching. Best file remains as_cd4_w1_c10_b05.vcc (not re-uploaded; user prefers saving
   slots for new candidates).
+- 2026-10-02 (Claude): **User goal now: top 100 (needs ≥0.218; we're 0.1745).** Leaderboard JSON is public:
+  `curl https://virtualcellchallenge.org/api/leaderboard?get_final=false` (saved at
+  data/calibration/leaderboard_2026-10-02.json, with descriptions).
+  - **Gap vs rank 100:** mse .10 vs .25, pds .67 vs .77, reach .12 vs .20.
+  - **Clues:**
+    - #22 (.254): per-target bulk amplitude × A^.75 · m^-.75 (A = mean pairwise cosine of source directions,
+      m = debiased source magnitude), energy-normalised, plus LINCS L1000 consensus signatures.
+    - #17 (.261): "allocation weights ^1.5".
+    - #183: VIPerturb-seq, a genome-wide K562 CRISPRi on **10x Flex**.
+    - #68 (.225): CD4 per-donor means + "DE-magnitude emitter".
+    - Others: DLD-1, PerturBase.
+  - **I'm implementing #22's agreement allocation now** (mse lever).
+  - **Suggest Codex:** find/adapt VIPerturb-seq (Flex K562) and LINCS L1000 consensus as sources.
