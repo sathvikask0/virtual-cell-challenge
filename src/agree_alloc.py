@@ -1,0 +1,125 @@
+"""Cross-source agreement allocation of each target's effect size (idea from leaderboard #22's description).
+
+Per target t, with sources s (K562, H1, HCT116, HEK293T, CD4; per-cell-space changes E_c):
+  A_t = mean pairwise cosine between the sources' centered changes (genes both measured)
+  m_t = norm of the fused change
+  s_t = max(A_t, floor)^alpha * m_t^-beta,   rescaled so sum_t s_t^2 |E_t|^2 = sum_t |E_t|^2   (energy kept),
+        capped at smax (default 2)
+Then the fused change of target t is multiplied by s_t: in the pooled target (bulk), and optionally the per-cell one.
+Targets the sources agree on get bigger changes, conflicting ones shrink toward the control.
+A target with fewer than 2 sources gets the median A.
+
+Usage (from src/):
+  python agree_alloc.py local LINE NAME [alpha=.75] [beta=.75] [cell=0] [cd4=1] [ac=1] [ab=.5]
+  python agree_alloc.py submission NAME [same options]
+"""
+import sys
+
+import numpy as np
+
+import atlas_shift as A
+import atlas_cd4 as C
+
+
+def source_rows(targets, genes, exclude):
+    """list of (targets x genes) E_c arrays, NaN where missing, one per source incl. CD4."""
+    g26 = {g: i for i, g in enumerate(A.genes26())}
+    cols = np.array([g26.get(g, -1) for g in genes])
+    out = []
+    for line in A.WEIGHTS:
+        if line in exclude:
+            continue
+        d = np.load(A.OUT / f"{line}.npz")
+        rows = {t: i for i, t in enumerate(d["targets"])}
+        V = np.full((len(targets), len(genes)), np.nan, np.float32)
+        for i, t in enumerate(targets):
+            if t in rows:
+                V[i] = np.where(cols >= 0, d["ec"][rows[t]][np.maximum(cols, 0)], np.nan)
+        out.append(V)
+    with np.load(C.PATH) as d:
+        ci = {g: i for i, g in enumerate(d["genes"])}
+        cc = np.array([ci.get(g, -1) for g in genes])
+        rows = {t: i for i, t in enumerate(d["targets"])}
+        V = np.full((len(targets), len(genes)), np.nan, np.float32)
+        for i, t in enumerate(targets):
+            if t in rows:
+                V[i] = np.where(cc >= 0, d["ec"][rows[t]][np.maximum(cc, 0)], np.nan)
+        out.append(V)
+    return out
+
+
+def agreement(rows, own):
+    T = rows[0].shape[0]
+    A_t = np.full(T, np.nan)
+    for i in range(T):
+        cos = []
+        for a in range(len(rows)):
+            for b in range(a + 1, len(rows)):
+                x, y = rows[a][i], rows[b][i]
+                m = np.isfinite(x) & np.isfinite(y) & ~own[i]
+                if m.sum() > 100:
+                    cos.append(x[m] @ y[m] / (np.linalg.norm(x[m]) * np.linalg.norm(y[m]) + 1e-12))
+        if cos:
+            A_t[i] = np.mean(cos)
+    return np.where(np.isfinite(A_t), A_t, np.nanmedian(A_t))
+
+
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0):
+    def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
+        ec, eb = A.fused(targets, genes, exclude)
+        den = np.zeros_like(ec)
+        g26 = {g: i for i, g in enumerate(A.genes26())}
+        cols = np.array([g26.get(g, -1) for g in genes])
+        for line, w in A.WEIGHTS.items():
+            if line in exclude:
+                continue
+            with np.load(A.OUT / f"{line}.npz") as d:
+                ti = {t: i for i, t in enumerate(d["targets"])}
+                for i, t in enumerate(targets):
+                    if t in ti:
+                        den[i] += w * ((cols >= 0) & np.isfinite(d["ec"][ti[t]][np.maximum(cols, 0)]))
+        rows = source_rows(targets, genes, exclude)
+        if cd4 > 0:
+            ec, eb = C.add_cd4(ec, eb, den, rows[-1], q, cd4)
+        own = np.array([genes == t for t in targets])
+        A_t = agreement(rows if cd4 > 0 else rows[:-1], own)
+        E = np.where(own, 0, ec)
+        m_t = np.linalg.norm(E, axis=1) + 1e-9
+        s = np.maximum(A_t, floor) ** alpha * m_t ** -beta
+        energy = (m_t ** 2).sum()
+        for _ in range(20):  # energy kept, boost capped at smax (the cell generator can't fit much larger changes)
+            s = np.minimum(s * np.sqrt(energy / ((s * m_t) ** 2).sum()), smax)
+        profiles.scale = s
+        profiles.A = A_t
+        print(f"  agreement A: median {np.median(A_t):.3f}; scale s: min {s.min():.2f} median {np.median(s):.2f} "
+              f"max {s.max():.2f}", flush=True)
+        keep_own = own  # the knocked-down gene keeps its full change
+        eb = np.where(keep_own, eb, eb * s[:, None])
+        if cell:
+            ec = np.where(keep_own, ec, ec * s[:, None])
+        dc = A.desired_mean(m, ec, space="log2fc", amplitude=ac, clip=3)
+        db = A.desired_mean(q, eb, space="bulk_delta", amplitude=ab, clip=3)
+        pairs = A.promoter_pairs(targets, genes)
+        dc, _ = A.apply_promoter_prior(dc, m, np.asarray(targets), genes, pairs, .15)
+        db, _ = A.apply_promoter_prior(db, q, np.asarray(targets), genes, pairs, .15)
+        return dc, db
+    return profiles
+
+
+if __name__ == "__main__":
+    cmd, rest = sys.argv[1], sys.argv[2:]
+    if cmd == "local":
+        line, name, rest = rest[0], rest[1], rest[2:]
+    else:
+        line, name, rest = "2026", rest[0], rest[1:]
+    o = {k: float(v) for k, v in (a.split("=") for a in rest)}
+    ac, ab = o.pop("ac", 1.0), o.pop("ab", 0.5)
+    if o.pop("x", 0):
+        import context_weights as CW
+        CW.use_x()
+    A.profiles = make_profiles(**o)
+    print(f"{line}/{name}: agreement allocation {o}, ac={ac}, ab={ab}", flush=True)
+    if cmd == "local":
+        A.local(line, name, ac=ac, ab=ab)
+    else:
+        A.build_2026(name, ac=ac, ab=ab)
