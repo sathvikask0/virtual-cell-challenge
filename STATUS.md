@@ -1,6 +1,6 @@
 # Status (2026-09-30)
 
-## Latest leaderboard (2026-10-01 night): **0.1745**, rank 232 (`as_cd4_w1_c10_b05`: atlas_shift + CD4 weight 1). Before: 0.159, 0.092.
+## Latest leaderboard (2026-10-02): **0.1706** probe ctxC_hct (best so far 0.1745, `as_cd4_w1_c10_b05`, file kept in data/submissions).
 
 ## Goal
 

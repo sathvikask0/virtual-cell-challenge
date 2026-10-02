@@ -455,3 +455,25 @@ Literature-backed source-only cosine graph transport implemented in src/perturba
 - A/B/C markers: A T-cell-like, B mesenchymal, C squamous epithelial; none stem-cell.
 - New local eval `jurkat`. CD4 weight 0/1/4 → Jurkat .1946/.1976/.1938, HepG2 .2365/.2314/.2165.
 - Cell-type matching is real but small (±.003–.005). Target's own expression doesn't predict response size (dead end).
+
+### Codex iPSC expression source — October 2 (full results pending)
+
+Feng/HipSci figshare26819743 GenomeWideScreen_LFC_byGene.tsv.gz downloaded (794610300bytes), official MD5 verified. 43187656rows/6673targets; 6151 measured challenge genes. Source LFC is log10, converted by log2(10); adjusted mean log-expression effects, not exact pooled-count ratios. Streaming source src/ipsc_source.py writes ipsc_de.npz and separate ipsc_de_eval.npz (extra HepG2/Jurkat targets). Main challengecoverage182/300 all,77 ownQC; H1coverage250/300 all,134QC. Full-panel centering excludes own coordinates, missingness retained, ambiguous symbols/duplicate mapped pairs rejected. Five tests pass, including state restoration; corrected screen weight0 matches CD4w1 exactly on H1/HepG2. Initial limited-target HepG2 proxy preserved and superseded by expanded atlas_shift_x proxy. Conservative full candidate ownQC weight.5/ac1/ab.5/pool4: H1 and HepG2 as_ipsc_qc_w05_c10_b05 running, max2total; matched baselines .2268683314(H1) and .2313675357(HepG2 cw_base). Math/provenance/commands: IPSC_SOURCE_MATH.md. Claude owns uploads; none by Codex.
+
+
+## Completed iPSC decision — October 2
+
+| Local comparison | Baseline | iPSC w.5 | Difference |
+|---|---:|---:|---:|
+| H1 seed0 pilot | .226868 | .236112 | +.009244 |
+| H1 corrected seed1 | .227553 | .237081 | +.009529 |
+| HepG2 corrected seed0 vs CD4w1 | .231368 | .234210 | +.002843 |
+| Jurkat corrected seed0 vs CD4w1 | .197603 | .192779 | −.004823 |
+
+HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurkat metrics decline. H1 gains persist when excluding panel target genes, but do not establish transfer to non-stem contexts. Reject the uniform iPSC addition for submission. Seed0 H1 is the pilot implementation; seed1 and the corrected other-line runs use exact numerical isolation. Compare scores within each line because normalization differs. All Codex scorer jobs finished, both reservations released, and Claude remains sole upload owner. No iPSC submission was built or uploaded. A no-CD4+iPSC ablation remains untested. Six source/adapter tests passed; cache and commands above remain reusable. This completed decision supersedes earlier pending-run snapshots.
+
+## 2026-10-02: leaderboard probe ctxC_hct → 0.1706 (vs 0.1745)
+- Same as as_cd4_w1_c10_b05 except context C: HCT116 ×2, no CD4. Only C changed, so C's own score fell ~.012.
+- pds .655 (was .667), mse .099, nmae .166, fid −.014, reach .119, jac .000.
+- Lesson: CD4 helps the epithelial context too. CD4's gain is not T-cell-specific, and HepG2 is a poor proxy for C.
+  Pooling diverse sources beats cell-type matching here. KOLF (stem) still only helps H1 (paired r), not added.

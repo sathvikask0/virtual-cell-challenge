@@ -11,6 +11,7 @@ Usage (from src/):
   python context_weights.py build
   python context_weights.py local LINE NAME k562=2 h1=2 hct116=1 hek293t=1 cd4=1 [ac=1 ab=.5]
   python context_weights.py submission NAME A=1 B=0 C=0 [ac=1 ab=.5]
+  python context_weights.py submission NAME A=1 B=1 C=k562:2,h1:2,hct116:2,hek293t:1,cd4:0
                                             2026 build with a CD4 weight per context (main caches, default
                                             source weights); writes data/submissions/NAME.vcc, no upload
 """
@@ -60,10 +61,30 @@ def local(line, name, ac=1.0, ab=0.5, **w):
     A.local(line, name, ac=ac, ab=ab)
 
 
-def submission(name, ac=1.0, ab=0.5, **cd4):
-    for c, w in cd4.items():
-        A.CTX_PROFILES[c] = C.make_profiles(w) if w > 0 else A.profiles
-    print(f"{name}: CD4 weight per context {cd4}, sources {A.WEIGHTS}", flush=True)
+def with_weights(weights, cd4):
+    """profiles function that uses these source weights (and CD4 weight) for one context."""
+    base = C.make_profiles(cd4) if cd4 > 0 else A.profiles
+
+    def profiles(*args, **kw):
+        saved = A.WEIGHTS
+        A.WEIGHTS = weights
+        try:
+            return base(*args, **kw)
+        finally:
+            A.WEIGHTS = saved
+    return profiles
+
+
+def submission(name, ac=1.0, ab=0.5, **spec):
+    """spec: context -> CD4 weight (A=1), or context -> 'k562:2,h1:2,hct116:2,hek293t:1,cd4:0'."""
+    for c, v in spec.items():
+        if isinstance(v, str) and ":" in v:
+            w = {k: float(x) for k, x in (kv.split(":") for kv in v.split(","))}
+            cd4 = w.pop("cd4", 0.0)
+            A.CTX_PROFILES[c] = with_weights({k: x for k, x in w.items() if x > 0}, cd4)
+        else:
+            A.CTX_PROFILES[c] = C.make_profiles(float(v)) if float(v) > 0 else A.profiles
+    print(f"{name}: per context {spec}, default sources {A.WEIGHTS}", flush=True)
     A.build_2026(name, ac=ac, ab=ab)
 
 
@@ -71,7 +92,8 @@ if __name__ == "__main__":
     if sys.argv[1] == "build":
         build()
     elif sys.argv[1] == "submission":
-        submission(sys.argv[2], **{k: float(v) for k, v in (a.split("=") for a in sys.argv[3:])})
+        kv = dict(a.split("=", 1) for a in sys.argv[3:])
+        submission(sys.argv[2], ac=float(kv.pop("ac", 1.0)), ab=float(kv.pop("ab", 0.5)), **kv)
     else:
         opts = {k: float(v) for k, v in (a.split("=") for a in sys.argv[4:])}
         local(sys.argv[2], sys.argv[3], **opts)
