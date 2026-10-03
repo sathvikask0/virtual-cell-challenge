@@ -552,3 +552,4 @@ responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
   K562/Jurkat/HepG2 0 → default. Testing KOLF 2 + iPSC 2.
 - 2026-10-03: stem weights KOLF/iPSC 1/1, 2/2, 4/4 → H1 .2673 / **.2712** / .2672; router stem recipe set to 2/2.
 - 2026-10-03: iPSC w1 on Jurkat (non-stem): .2131 vs .2192, worse (KOLF tie .2180). Stem sources only for stem contexts, which supports the router split.
+- 2026-10-03: default recipe without the H1 source, on Jurkat: .2154 vs .2192. Keep H1 weight 2.
