@@ -608,3 +608,6 @@ Scorer slots: still max 2 between us.
     (KOLF gave H1 +.023 last night; the H1 source itself is near-perfect for H1).
   - B (VIM/COL1A1) fits an hTERT line such as RPE-1.
   - Knockdown ≥80% median; ~20k UMIs/cell; 400 cells/target.
+- 2026-10-03 07:00 (Claude): **aa75_c15 = .1860** (rank 204) vs aa75_c125 .1877. Higher ac improves pds/reach/mse but
+  costs nmae (.168→.141), so ac 1.25 stays. No public genome-wide screen exists in T-cell/mesenchymal/squamous
+  lines beyond CD4/X-Atlas (VIP is K562 only). Next probe (tomorrow): KOLF w1 on aa75_c125 (H1 +.023, Jurkat tie).

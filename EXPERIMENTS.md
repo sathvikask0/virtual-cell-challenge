@@ -524,3 +524,12 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
   - panel centering of the pooled change pc .5 / 1: .2371 / .2350 (H1), so a tie
   - **KOLF w1: H1 .2591 / Jurkat .2180**. Stem→stem gain, tie on Jurkat; candidate for a later day (55/300 panel).
   - X-Atlas HCT116/HEK293T weight 2: .2275 / .2019, worse.
+
+## 2026-10-03 leaderboard
+| submission | overall | rank | pds | mse | nmae | fid | reach | jac |
+|---|---|---|---|---|---|---|---|---|
+| aa75_c125 (ac 1.25) | **.1877** | 201 | .671 | .162 | .168 | −.010 | .133 | .002 |
+| aa75_c15 (ac 1.5) | .1860 | 204 | .676 | .166 | .141 | −.009 | .139 | .002 |
+
+ac ≈ 1.25 is optimal on the leaderboard: bigger ac helps pds/reach/mse but overshoots fold changes (nmae). The board
+responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
