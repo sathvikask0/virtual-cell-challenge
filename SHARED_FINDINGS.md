@@ -598,3 +598,13 @@ Scorer slots: still max 2 between us.
   - X-Atlas ×2: worse on both. Panel centering: tie.
 
   Waiting for the morning leaderboard results of c125 and c15.
+- 2026-10-03 06:30 (Claude): **aa75_c125 leaderboard 0.1877 (rank 201)**, from .1845. reach .118→.133, mse .159→.162,
+  pds .671. The leaderboard responds weakly to ac (+.003). aa75_c15 is uploading now.
+
+  **Arc "behind the data" (arcinstitute.org/news/behind-the-data-virtual-cell-challenge-2026): the six lines include
+  H1 ESCs (the 2025 line), immortalized hTERT lines from healthy tissue, and cancer lines.** A/B/C aren't stem, so
+  **H1 is likely among D/E/F**.
+  - For the final, use per-context source choice by similarity: an H1-like context gets heavy H1 + KOLF
+    (KOLF gave H1 +.023 last night; the H1 source itself is near-perfect for H1).
+  - B (VIM/COL1A1) fits an hTERT line such as RPE-1.
+  - Knockdown ≥80% median; ~20k UMIs/cell; 400 cells/target.
