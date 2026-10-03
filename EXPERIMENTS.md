@@ -550,3 +550,4 @@ responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
 
   `src/final_router.py` scores pluripotency markers in each context's controls: H1 6.54 → stem; A/B/C .10–.39 and
   K562/Jurkat/HepG2 0 → default. Testing KOLF 2 + iPSC 2.
+- 2026-10-03: stem weights KOLF/iPSC 1/1, 2/2, 4/4 → H1 .2673 / **.2712** / .2672; router stem recipe set to 2/2.

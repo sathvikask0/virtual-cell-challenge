@@ -16,7 +16,7 @@ MARKERS = ["POU5F1", "NANOG", "LIN28A", "DPPA4", "TDGF1", "L1TD1"]
 STEM_MIN = 3.0  # mean log1p(CPM); H1 controls ~6-7, A/B/C ~0-0.5
 RECIPES = {
     "default": dict(alpha=.75, beta=.75, ac=1.25, cd4=1.0),            # aa75_c125, leaderboard .1877
-    "stem": dict(alpha=.75, beta=.75, ac=1.25, cd4=1.0, kolf=1.0, ipsc=1.0),  # H1 .2673 vs .2365 default; EXPERIMENTS.md
+    "stem": dict(alpha=.75, beta=.75, ac=1.25, cd4=1.0, kolf=2.0, ipsc=2.0),  # H1 .2712 vs .2365 default; EXPERIMENTS.md
 }
 
 
