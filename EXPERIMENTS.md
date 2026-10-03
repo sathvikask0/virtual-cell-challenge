@@ -533,3 +533,5 @@ HepG2's tested no-CD4 model scores .236471, above this iPSC blend. All six Jurka
 
 ac ≈ 1.25 is optimal on the leaderboard: bigger ac helps pds/reach/mse but overshoots fold changes (nmae). The board
 responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
+- 2026-10-03 morning: KOLF + VIP bulk r.25 on aa75_c125: H1 .2586 / Jurkat .2143 vs KOLF alone .2591/.2180. VIP adds
+  nothing. kolf_c125.vcc (validated) is scheduled for 2026-10-04 05:32 IST.
