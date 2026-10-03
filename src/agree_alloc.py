@@ -135,7 +135,7 @@ def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
     return ec, eb
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -200,6 +200,17 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             eb = np.where(own, eb, eb - pc * np.nan_to_num(mu)[None, :])
             print(f"  panel centering pc={pc}: mean-change norm {np.linalg.norm(np.nan_to_num(mu)):.3f} vs median target "
                   f"{np.median(np.linalg.norm(np.where(own, 0, eb), axis=1)):.3f}", flush=True)
+        if cq:  # DE-consensus on the per-cell change: top-cq |fused| genes whose sources all agree in sign x cboost, rest x csupp
+            srcs = rows if cd4 > 0 else rows[:-1]
+            pos = sum((np.nan_to_num(x) > 0).astype(int) for x in srcs)
+            neg = sum((np.nan_to_num(x) < 0).astype(int) for x in srcs)
+            nsrc = sum(np.isfinite(x).astype(int) for x in srcs)
+            agree = (nsrc >= 2) & ((pos == nsrc) | (neg == nsrc))
+            E = np.abs(np.where(own, 0, ec))
+            thr = np.quantile(E, 1 - cq, axis=1, keepdims=True)
+            top = agree & (E >= thr)
+            print(f"  DE consensus: boosted genes per target median {np.median(top.sum(1)):.0f}", flush=True)
+            ec = np.where(own, ec, ec * np.where(top, cboost, csupp))
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:

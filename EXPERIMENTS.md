@@ -535,3 +535,6 @@ ac ≈ 1.25 is optimal on the leaderboard: bigger ac helps pds/reach/mse but ove
 responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
 - 2026-10-03 morning: KOLF + VIP bulk r.25 on aa75_c125: H1 .2586 / Jurkat .2143 vs KOLF alone .2591/.2180. VIP adds
   nothing. kolf_c125.vcc (validated) is scheduled for 2026-10-04 05:32 IST.
+- 2026-10-03: DE-consensus boost/suppress on the per-cell change (top-10% agreeing genes ×1.6, rest ×.5, per #296's
+  description): H1 .2252 / Jurkat .1961, worse (fid and reach down). Per-target H1 pds median .98 (retrieval easy on H1),
+  while LB raw pds is .80, so H1 can't guide pds work.
