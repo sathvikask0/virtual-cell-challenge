@@ -135,7 +135,7 @@ def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
     return ec, eb
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -154,6 +154,20 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             ec, eb = weighted_fusion(targets, genes, exclude, q, cd4, srcw)
         elif cd4 > 0:
             ec, eb = C.add_cd4(ec, eb, den, rows[-1], q, cd4)
+        if ipsc > 0:  # Codex's iPSC 34-line LFC source (own-suppression QC), added like CD4 via destination controls
+            with np.load(A.OUT / "ipsc_de.npz") as d:
+                gi = {g: i for i, g in enumerate(d["genes"])}
+                cc = np.array([gi.get(g, -1) for g in genes])
+                ok = d["own_suppression_pass"]
+                ti = {t: i for i, t in enumerate(d["targets"]) if ok[i]}
+                V = np.full((len(targets), len(genes)), np.nan, np.float32)
+                for i, t in enumerate(targets):
+                    if t in ti:
+                        V[i] = np.where(cc >= 0, d["ec"][ti[t]][np.maximum(cc, 0)], np.nan)
+            den2 = den + (cd4 * np.isfinite(rows[-1]) if cd4 > 0 else 0)
+            ec, eb = C.add_cd4(ec, eb, den2, V, q, ipsc)
+            rows = rows + [V]
+            print(f"  iPSC source: {np.isfinite(V).any(1).sum()} of {len(targets)} targets", flush=True)
         own = np.array([genes == t for t in targets])
         A_t = agreement(rows if cd4 > 0 else rows[:-1], own)
         E = np.where(own, 0, ec)

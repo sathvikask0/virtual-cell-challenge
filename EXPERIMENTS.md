@@ -539,3 +539,14 @@ responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
   description): H1 .2252 / Jurkat .1961, worse (fid and reach down). Per-target H1 pds median .98 (retrieval easy on H1),
   while LB raw pds is .80, so H1 can't guide pds work.
 - 2026-10-03: agreement alpha 1.5 (capped) + ac 1.25: H1 .2352 / Jurkat .1925 (pds .552), worse. Keep alpha .75.
+- 2026-10-03 **stem recipe for the final** (Arc: the six lines include H1 ESCs; A/B/C aren't stem):
+
+  | H1 | overall | pds | mse |
+  |---|---|---|---|
+  | aa75_c125 | .2365 | .747 | .078 |
+  | +KOLF | .2591 | .787 | .127 |
+  | +iPSC (Codex's HipSci 34-line, own-suppression QC) | .2494 | .799 | .093 |
+  | **+KOLF+iPSC** | **.2673** | .814 | .139 |
+
+  `src/final_router.py` scores pluripotency markers in each context's controls: H1 6.54 → stem; A/B/C .10–.39 and
+  K562/Jurkat/HepG2 0 → default. Testing KOLF 2 + iPSC 2.
