@@ -538,3 +538,4 @@ responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
 - 2026-10-03: DE-consensus boost/suppress on the per-cell change (top-10% agreeing genes ×1.6, rest ×.5, per #296's
   description): H1 .2252 / Jurkat .1961, worse (fid and reach down). Per-target H1 pds median .98 (retrieval easy on H1),
   while LB raw pds is .80, so H1 can't guide pds work.
+- 2026-10-03: agreement alpha 1.5 (capped) + ac 1.25: H1 .2352 / Jurkat .1925 (pds .552), worse. Keep alpha .75.
