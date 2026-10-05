@@ -640,3 +640,7 @@ Commands: `.venv/bin/python src/shared_response_rule.py --held {h1,jurkat,hepg2}
 - Jurkat (x=1; a first run without x=1 used the wrong caches and scored .001, discard): rmpc5 .210 vs .219 (pds .660 -> .705, but plain mse worse on 68% of targets, reach .153 -> .117). Offline proxy on Jurkat also improved retrieval (.848 -> .884); top-5 PCs hold only ~6% of prediction energy.
 - rmpc5h (pcg=-.5): H1 .240 (pds .770), Jurkat .212. Same trade-off, smaller.
 - Built and validated data/submissions/rmpc5.vcc (full strength). Open question it would answer on the board: does 2026 follow H1 (pds up, nothing else moves) or Jurkat (reach/mse down)?
+- Reach diagnostic (aa75_c125, scratch reach_diag): sign accuracy in our top-10 ranked real-DE genes is .69 (H1) / .83
+  (Jurkat), overall .62 / .73, vs .57 / .58 for "all down". k*=0 on 34/150 H1 targets. Reach is limited by sign accuracy
+  at the top of our ranking, not by depth.
+- 2026-10-05: uploaded rmpc5 (user OK). Expect ~.193 if the board follows H1, ~.181 if it follows Jurkat.
