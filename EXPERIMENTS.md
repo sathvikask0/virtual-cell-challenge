@@ -682,5 +682,18 @@ Early generated-cell mean-error audit for learned confidence: pooled-only .03268
 
 ### 2026-10-05 learned confidence + neural combination
 
-Full emitted-cell scores: H1 .242507, Jurkat .245837, zero generator fallbacks. Both exceed neural-half and rmpc5 locally; fresh scoring used identical SHA-checked baseline reference files. Comparisons: data/calibration/learned_sign_combo_shared_reference.json. Plain generated-cell MSE: data/calibration/learned_sign_combo_plain_mse.json. HepG2 replication pending available scorer slot. No upload. Three-class signed response cheap pilot completed on all3: MSE improves but retrieval worsens throughout; not promoted. data/calibration/signed_response_comparison.json.
+Full emitted-cell scores: H1 .242507, Jurkat .245837, zero generator fallbacks. Both exceed neural-half and rmpc5 locally; fresh scoring used identical SHA-checked baseline reference files. Comparisons: data/calibration/learned_sign_combo_shared_reference.json. Plain generated-cell MSE: data/calibration/learned_sign_combo_plain_mse.json. HepG2 replication completed: .270404 replicate / .159780 baseline versus .263551 / .151770 transfer baseline. Matching anchor/bundle digests, zero fallbacks. Plain MSE improves versus transfer baseline (paired interval excludes0); near-tie versus neuralhalf. No upload. Three-class signed response cheap pilot completed on all3: MSE improves but retrieval worsens throughout; not promoted. data/calibration/signed_response_comparison.json.
 - u3b2 (cboost 2): Jurkat .256 (fid .450, reach .209, jac -.003) vs u3b15 .241; H1 .239 vs .242 (nmae -.051 -> -.077). Not a clear win on both; u3b15 stays first for 2026-10-06 05:31 IST. u3b2 built as 2nd-slot candidate if u3b15 lifts board fid/reach.
+
+### 2026-10-05 source-aware signed-response pilot
+
+Per-output-gene source effects/signs/missingness added for K562/H1/HCT116/HEK293T/CD4. Held context and each training example own source excluded. H1 MSE .005003->.004921, top10 large-response sign proxy .72378->.73178, retrieval .86416->.84957. RPE1-selected blend1. Not promoted due discrimination loss. Testing centered correction with same frozen classifier; no full scorer or upload. src/signed_response_head.py --source-features; artifacts signed_response_sources and signed_response_sources_centered.
+
+### Source-aware signed head rejection and gated-flip hypothesis
+
+Jurkat centered head worsens retrieval .85951->.81329 and MSE .022440->.022475. On substantial real responses, flipped signs are correct only .459 H1 / .486 Jurkat. Both raw and centered heads rejected for full scoring. Next cheap pilot keeps copied sign unless classifier conditional direction confidence exceeds RPE1-selected threshold .75/.9/1. Existing frozen classifier reused; held outcomes only reported. H1 gated pilot live. No upload/scorer added.
+- Called-set diagnostic (u3b15, scratch callset.py), prompted by Codex's "Vcc2026 Ambitious Bet" note (layer 2):
+  H1 calls median **4,644** genes per target vs 268 real (84% of targets over-call >1.5x), sign acc of calls .54;
+  Jurkat 70 vs 66. Trimming our own calls by p-value to an oracle 1.2*n_real only lifts raw fid/jac .529/.094 ->
+  .546/.112 (H1), .439/.066 -> .500/.158 (Jurkat). Test: `topk=K` keeps the per-cell change on each target's K largest
+  |ec| (after the consensus boost), zero elsewhere, bulk change untouched. Running H1 K=300, 1000.

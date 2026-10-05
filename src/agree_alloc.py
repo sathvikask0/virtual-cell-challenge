@@ -172,7 +172,7 @@ def pca_smooth(E, own, lam, renorm, g=0.0, lo=0, spec=0, hi=0):
     return np.where(own, E, out)
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0, pchi=0, cmin=2):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0, pchi=0, cmin=2, topk=0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -262,6 +262,12 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             top = agree & (E >= thr)
             print(f"  DE consensus: boosted genes per target median {np.median(top.sum(1)):.0f}", flush=True)
             ec = np.where(own, ec, ec * np.where(top, cboost, csupp))
+        if topk:  # called-set size: keep the per-cell change only on each target's topk largest |change| (after any
+            # consensus boost), zero elsewhere; the pooled change (mse/pds) is untouched
+            E = np.abs(np.where(own, 0, ec))
+            kth = -np.sort(-E, axis=1)[:, int(topk) - 1:int(topk)]
+            ec = np.where(own | (E >= kth), ec, 0)
+            print(f"  top-k per-cell change: kept {int(topk)} genes per target", flush=True)
         if pcl or pcg:  # context PCA smoothing of the pooled change (and of the per-cell change if pcc)
             eb = pca_smooth(eb, own, pcl, pcn, pcg, pclo, pcspec, pchi)
             if pcc:
