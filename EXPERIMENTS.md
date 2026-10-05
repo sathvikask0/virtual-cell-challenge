@@ -678,3 +678,4 @@ Early generated-cell mean-error audit for learned confidence: pooled-only .03268
   - Jurkat **.241** vs rmpc5 .210 / aa75_c125 .219 (fid .272 -> .372, reach .117 -> .187, nmae .076 -> .099).
   - H1 .242 vs rmpc5 .241 (tie; reach .053 -> .058, nmae -.032 -> -.051).
   - Plain mse better than rmpc5 on 99% (H1) / 97% (Jurkat) of targets.
+  - HepG2: u3b15 vs aa75_c125: fid .216 -> .283, nmae .038 -> .058, pds .624 -> .628, reach flat (mean of 6 ~.152 -> .166). Built + validated data/submissions/u3b15.vcc (0 fallbacks); candidate for 2026-10-06 05:30 IST slot.
