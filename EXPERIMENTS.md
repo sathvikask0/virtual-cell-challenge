@@ -607,3 +607,19 @@ Fixed cross-context sign classifier trained on H1/HepG2, tested on Jurkat. Direc
   - Lesson: for changes that move pds, trust H1 (same 10x Flex platform as 2026), not Jurkat/HepG2 (10x 3').
   - Earlier lessons still hold: for source choice, don't trust H1 (stem biology); for mse, check plain mse.
   - g 4 version not submitted.
+
+
+### 2026-10-05 Distribution post-training (PerturbCellRL-inspired)
+
+Implemented differentiable energy-distance endpoint fitting, then an ablation adding a pretrained endpoint anchor and a training-cell-calibrated expression-support tail penalty.200updates each; unchanged initial checkpoint included in validation selection. This adapts paper ideas to our deterministic transport and is not stochastic NFT. Real HepG2 perturbed cells withheld from fitting, identical test samples verified against original run, training-only representation replay confirmed.
+
+Held150target program-space energy (lowerbetter): source-transfer0.821651; originalflow0.861163; energy-only1.186985; guarded1.102670. Mean and variance errors worsened too. Both seen-target93 and unseen-target57subgroups failed. Within-context held-target validation improved, showing that this training success did not transfer to a new cell context. Rejected for full count/scorer/upload promotion.7tests passed. See PERTURBCELLRL_EXPERIMENT.md and data/context_flow/hepg2_s0/posttraining_comparison.json.
+
+
+### 2026-10-05 HepG2 context-PCA requested replication
+
+Exact requested settings: alpha=.75 beta=.75 ac=1.25 pcs=100 pcl=.8 pcn=1 x=1. After iCloud stalls, run completed with0generatorfallbacks. Same normalization references verified. Replicate score0.263551→0.245268, baseline score0.151770→0.139086. Raw uncapped MSE improved26.9%, but PDS and reach degraded enough to dominate. Rejected for upload. Comparison data/calibration/pca_b_hepg2_comparison.json.
+
+## 2026-10-05: remove shared control-PC directions (rmpc5) and more cell variance (tvar125)
+- rmpc5 (`pcs=100 pcg=-1 pchi=5 pcn=1`: subtract each prediction's projection on the context's top-5 control PCs, renormalize): H1 .2408 vs .2365 (pds .747 -> .778; plain mse flat, .00290 -> .00292). pds gain concentrated on ~1/3 of targets.
+- tvar125 (template power 1.25, from PerturbCellRL's under-dispersion point): H1 .2374, but the gain is capped-mse (.078 -> .090, gameable), fid/jac down. Dropped.
