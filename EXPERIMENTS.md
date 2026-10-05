@@ -727,3 +727,4 @@ H1 seed1 combo .243283 vs u3b15 .241544, fresh shared-reference verification; pl
   on u3b15: H1 .218 / Jurkat .221 vs .242 / .241. Dropped. Pattern from topk, dsupp, cons10: removing per-cell change
   always loses; boosting confident genes (u3b15/u3b2) wins. The per-cell lever is "add power where sure", not "de-call".
 - u4b2 (cmin 4, x2): H1 .241 / Jurkat .218 vs u3b15 .242/.241. Boosting fewer genes loses; breadth matters. Next: cmin 2.
+- u2b15 (cmin 2, x1.5; 6.7k/2.5k genes boosted): H1 .239 / Jurkat .237 vs u3b15 .242/.241. cmin 3 is the sweet spot. u3b15 stays first for 05:31 IST.
