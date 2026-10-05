@@ -706,3 +706,23 @@ Fixed q_destination*(percell_target/m_destination)^(ab/ac=.4), normalized, mixed
     .529 -> .308. With n_pred >> n_real, F = k/n_pred ~ sign accuracy over all calls; shrinking below n_real caps F at
     n_pred/n_real. Lesson: our most-confident genes are not the real DE genes on H1; set size is not the lever,
     which-genes is. Dropped.
+
+### 2026-10-05 generated-cell variance audit
+
+Eight fixed random H1 targets: active-gene generated/real logCP10k variance median 0.3846544952905322; real/control median 1.001725198846634. Seed1 variance with seed0 false-call groups; descriptive only. data/calibration/h1_generation_variance_audit.json. Current-combo pool1 full test queued after paired seed comparison, max2-active gate. Existing validated package stays pool4.
+
+### 2026-10-05 paired seed result and pool1 variance
+
+H1 seed1 combo .243283 vs u3b15 .241544, fresh shared-reference verification; plain MSE improves significantly under paired-target bootstrap. H1 seed0 edge also positive. HepG2 matched bundle instead favors u3b15 .293999 vs combo .270404, so no universal candidate winner. Pool1 combo scorer now running; direct eight-target variance audit pred/real median1.034 vs pool4 .385. Existing validated pool4 package unchanged and not uploaded.
+
+### Codex: completed pool1 DE diagnostic (2026-10-05)
+
+- 2026-10-05 (Codex): Completed exact-cache pool DE audit (150targets/context; own gene excluded). H1 pool4->1: median calls4189.5->1049 vsreal268, mean recall.533->.271, precision.130->.160, intersect-sign accuracy.656->.714. Hep calls34->16 vsreal54.5, recall.105->.072, precision.188->.252. Thus variance restoration trades away true response detection despite improving conditional precision/signs. Not official metric replacements. Evidence data/calibration/combo_pool_de_diagnostic.json. Avoid further global variance-only tuning; prioritize response-specific calibration learned on other contexts.
+
+
+### Codex exact-DE presence ranking pilot
+
+- 2026-10-05 (Codex): NEW exact-DE presence feasibility pilot completed, src/exact_de_presence_pilot.py. Trains on other two scored public contexts, target-disjoint validation; held labels reporting only, excludes own gene. Held average precision beats copied magnitude on all3: H1 .2711 vs .2230; Jurkat .1262 vs .0842; HepG2 .1473 vs .1266. AUC~.736/.749/.750. Absolute probability calibration fails (H1 predicts1.57% vs11.30% real, Jurkat7.67% vs3.67% real). Promising as within-target ranking ONLY; do not use raw probabilities to set response counts. No cells/scorer/upload. Results data/calibration/exact_de_presence_pilot.json. Next: context-robust rank weighting with training-only selection and discrimination checks.
+- dsupp=0 (zero per-cell change on genes whose sources split in sign; median 10.8k/5.6k genes per target on H1/Jurkat),
+  on u3b15: H1 .218 / Jurkat .221 vs .242 / .241. Dropped. Pattern from topk, dsupp, cons10: removing per-cell change
+  always loses; boosting confident genes (u3b15/u3b2) wins. The per-cell lever is "add power where sure", not "de-call".
