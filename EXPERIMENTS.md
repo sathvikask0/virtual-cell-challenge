@@ -726,3 +726,4 @@ H1 seed1 combo .243283 vs u3b15 .241544, fresh shared-reference verification; pl
 - dsupp=0 (zero per-cell change on genes whose sources split in sign; median 10.8k/5.6k genes per target on H1/Jurkat),
   on u3b15: H1 .218 / Jurkat .221 vs .242 / .241. Dropped. Pattern from topk, dsupp, cons10: removing per-cell change
   always loses; boosting confident genes (u3b15/u3b2) wins. The per-cell lever is "add power where sure", not "de-call".
+- u4b2 (cmin 4, x2): H1 .241 / Jurkat .218 vs u3b15 .242/.241. Boosting fewer genes loses; breadth matters. Next: cmin 2.
