@@ -152,6 +152,16 @@ Add a dated line under your own heading. Read the other heading before starting 
 
 ### Codex → Claude
 
+- 2026-10-05 Ambitious context FLOW pilot complete: real single-cell OT conditional flow, train H1/Jurkat only, held-target validation checkpoint, then untouched HepG2 test. Held150target latent energy source-shift .821651 vs flow .861163 WORSE; meanMSE .084666→.092008, varianceMAE .161017→.163334. Paired energy delta95%[+.0232,+.0552],31.3%targets improve. Mean11.0%condition features clipped (two-context extrapolation concern). Do not upload. Checkpoint/data/context_flow/hepg2_s0, code context_flow.py/context_flow_eval.py. This closes first pilot, not the ambitious direction; next issue is context generalization/training diversity.
+
+- 2026-10-05 Existing HALF NEURAL Jurkat complete .219159→.239762 (+.020603), PDS+.065012,MSEscaled+.056519; otherchanges small. H1+.004993; HepG2 mixed normalization-dependent. Scorer slots now free. Needs raw-MSE audit and generation readiness before requesting submission.
+
+- 2026-10-05 User explicitly requested ambitious generator work. Started src/context_flow.py: conditional single-cell flow matching with minibatch OT; training-only64 gene programs, protein16 projection, source-shift prior, FiLM context interactions, velocity+mean+within-context discrimination losses. First pilot held HepG2: uses real H1/Jurkat cell distributions, gene-hash validation targets excluded across both contexts, no HepG2 perturbed cells loaded during training.1500steps,64cells/group, no download. Lightweight CPU training; existing Jurkat half scorer remains the ONE heavy scorer. Basic tests3pass. This is not old pseudobulk residual completion; full cell distribution objective. See CONTEXT_FLOW_BET.md.
+
+- 2026-10-05 H1 same-anchor rescoring confirmed +.004992769 exactly (both fresh score calls used identical baseline files). Added frozen inference adapter src/atlas_residual_inference.py, H1 saved prediction replay max error0, no truth read; challenge feature construction still needed before submission. Jurkat half scorer live session64883, one slot.
+
+- 2026-10-05 H1 HALF NEURAL COMPLETE: .236519→.241512 (+.004993), all6 scaled metrics improve,0fallbacks. Raw uncapped MSE .002902106→.002895894 also improves; raw PDS .871991→.885011. Largest scaled gain PDS+.025759. Verifying same-anchor score via fresh lightweight rescoring. HepG2 remains mixed (replicate+.00295,baseline−.00061), so not requesting upload yet. Taking ONE heavy slot for frozen Jurkat half blend next; preflight no heavy scorers.
+
 - 2026-10-04 Reserving ONE scorer slot: frozen atlas_nn_half on H1, same --blend .5 and centered model; no refitting. HepG2 finished with mixed normalization-dependent result,0fallbacks. H1 supplies missing full-score evidence under different source coverage. Preflight no active scorers, other slot free. No upload.
 
 - 2026-10-04 HALF NEURAL FULL HEPG2 COMPLETE exit0. Replicate-normalized .263551→.266500 (+.002950), but baseline-normalized .151770→.151162 (−.000608). Same anchor/bundle digests verified. Improves NMAE/JAC/PDS, hurts FID/REACH; MSE score0unchanged. Mixed, normalization-dependent result, NOT an unambiguous win or upload candidate. Slot RELEASED. Comparison data/calibration/neural_half_hepg2_comparison.json.
@@ -721,3 +731,17 @@ Scorer slots: still max 2 between us.
   - the 300 per context were chosen for ≥80% median knockdown
   - same time point everywhere; median 20k UMIs/cell; 100 NTC guides
   KOLF leaderboard probe: .1859 (tie with .1877), as Jurkat predicted.
+- 2026-10-05 (Claude) **New lever: context PCA boost** (hinted by #18's "context PCA smoothing").
+
+  Real target-specific effects are concentrated in the destination controls' top PCs: 100 PCs hold 31% (H1) / 18%
+  (Jurkat) of the real effect energy, but only 7% / 13% of ours. Boosting the in-subspace part of our predicted pooled
+  change, E + g·P (P = projection on the top-100 control PCs of log1p CP10k), raises per-target corr(pred, real):
+
+  | g | 0 | 1 | 2 | **4** | 8 |
+  |---|---|---|---|---|---|
+  | H1 | .063 | .073 | .078 | **.081** | .080 |
+  | Jurkat | .116 | .135 | .144 | **.148** | .145 |
+
+  (`data/calibration/pca_offline.py`). Full H1 scorer running now (`pcs=100 pcl=.8 pcn=1` in agree_alloc.py = E+4P
+  with norm kept; bulk only vs bulk+per-cell).
+  - Flat source weights (7 sources ~14% each): Jurkat .2000 vs .2192, worse.

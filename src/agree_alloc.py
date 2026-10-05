@@ -135,7 +135,41 @@ def weighted_fusion(targets, genes, exclude, q, cd4, gamma, floor=0.002):
     return ec, eb
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0):
+CTX = {}  # the current context's PCA basis of control-cell log expression, set by capture_controls()
+
+
+def capture_controls(k=100, n=4000):
+    """Wrap atlas_shift.control_stats so each context's control cells also give a PCA basis (genes x k) of
+    log1p(10k-normalised expression), centred, from up to n cells."""
+    from sklearn.decomposition import PCA
+    import scipy.sparse as sp
+    original = A.control_stats
+
+    def stats(X, *a, **kw):
+        out = original(X, *a, **kw)
+        R = sp.csr_matrix(X, dtype=np.float64)
+        idx = np.random.default_rng(0).choice(R.shape[0], min(n, R.shape[0]), replace=False)
+        R = R[idx]
+        lib = np.asarray(R.sum(1)).ravel()
+        L = np.log1p((sp.diags(1e4 / lib) @ R).toarray())
+        CTX["V"] = PCA(n_components=k, random_state=0).fit(L).components_.T  # genes x k
+        print(f"  context PCA: {k} components from {len(idx)} control cells", flush=True)
+        return out
+    A.control_stats = stats
+
+
+def pca_smooth(E, own, lam, renorm):
+    V = CTX["V"]
+    P = (np.where(own, 0, E) @ V) @ V.T
+    out = (1 - lam) * E + lam * P
+    if renorm:
+        n0 = np.linalg.norm(np.where(own, 0, E), axis=1, keepdims=True)
+        n1 = np.linalg.norm(np.where(own, 0, out), axis=1, keepdims=True)
+        out = out * n0 / np.maximum(n1, 1e-12)
+    return np.where(own, E, out)
+
+
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -225,6 +259,10 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             top = agree & (E >= thr)
             print(f"  DE consensus: boosted genes per target median {np.median(top.sum(1)):.0f}", flush=True)
             ec = np.where(own, ec, ec * np.where(top, cboost, csupp))
+        if pcl:  # context PCA smoothing of the pooled change (and of the per-cell change if pcc)
+            eb = pca_smooth(eb, own, pcl, pcn)
+            if pcc:
+                ec = pca_smooth(ec, own, pcc, pcn)
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:
@@ -251,6 +289,9 @@ if __name__ == "__main__":
         if src in o:
             w = o.pop(src)
             A.WEIGHTS = {**A.WEIGHTS, src: w} if w > 0 else {k: v for k, v in A.WEIGHTS.items() if k != src}
+    pcs = int(o.pop("pcs", 0))
+    if pcs:
+        capture_controls(pcs)
     tpow = o.pop("tpow", 1.0)
     if tpow != 1.0:  # Codex's template-variance lever (src/atlas_template_variance.py): templates^power around their mean
         original = A.control_stats
