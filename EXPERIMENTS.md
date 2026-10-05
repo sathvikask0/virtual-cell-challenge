@@ -697,3 +697,12 @@ Jurkat centered head worsens retrieval .85951->.81329 and MSE .022440->.022475. 
   Jurkat 70 vs 66. Trimming our own calls by p-value to an oracle 1.2*n_real only lifts raw fid/jac .529/.094 ->
   .546/.112 (H1), .439/.066 -> .500/.158 (Jurkat). Test: `topk=K` keeps the per-cell change on each target's K largest
   |ec| (after the consensus boost), zero elsewhere, bulk change untouched. Running H1 K=300, 1000.
+
+### 2026-10-05 destination-abundance bulk transport diagnostic
+
+Fixed q_destination*(percell_target/m_destination)^(ab/ac=.4), normalized, mixed with original pooled profile.25% blend improves desired native-axis MSE all3 slightly; retrieval improves H1 but worsens Jurkat/HepG2. Raw ratio without ac/ab calibration over-amplifies and is not the tested calibrated recipe. No held-grid selection, generated cells, or full scorer. Not promoted. src/bulk_expression_transport.py; data/calibration/bulk_expression_transport.json.
+  - **Result: topk loses badly.** H1 tk300 .178 / tk1000 .186 vs u3b15 .242. Calls did shrink (median 4,644 -> 160 / 342)
+    but sign accuracy of calls stayed .55 and the kept genes are not the real DE ones (jac .093 -> .019). Raw fid
+    .529 -> .308. With n_pred >> n_real, F = k/n_pred ~ sign accuracy over all calls; shrinking below n_real caps F at
+    n_pred/n_real. Lesson: our most-confident genes are not the real DE genes on H1; set size is not the lever,
+    which-genes is. Dropped.
