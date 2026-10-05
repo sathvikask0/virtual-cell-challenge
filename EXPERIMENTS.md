@@ -539,7 +539,7 @@ responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
   description): H1 .2252 / Jurkat .1961, worse (fid and reach down). Per-target H1 pds median .98 (retrieval easy on H1),
   while LB raw pds is .80, so H1 can't guide pds work.
 - 2026-10-03: agreement alpha 1.5 (capped) + ac 1.25: H1 .2352 / Jurkat .1925 (pds .552), worse. Keep alpha .75.
-- 2026-10-03 **stem recipe for the final** (Arc: the six lines include H1 ESCs; A/B/C aren't stem):
+- 2026-10-03 **experimental stem recipe** (October 4 correction: Arc says the 2026 lines differ from 2025 H1; the blog does not establish a stem context in the final panel):
 
   | H1 | overall | pds | mse |
   |---|---|---|---|
@@ -553,3 +553,37 @@ responds much more weakly than local tests (+.003 vs H1 +.008 / Jurkat +.02).
 - 2026-10-03: stem weights KOLF/iPSC 1/1, 2/2, 4/4 → H1 .2673 / **.2712** / .2672; router stem recipe set to 2/2.
 - 2026-10-03: iPSC w1 on Jurkat (non-stem): .2131 vs .2192, worse (KOLF tie .2180). Stem sources only for stem contexts, which supports the router split.
 - 2026-10-03: default recipe without the H1 source, on Jurkat: .2154 vs .2192. Keep H1 weight 2.
+
+## 2026-10-04 Codex neural transfer and external-feature experiments
+
+Actual aa75_c125 pooled predictions form the baseline for a rank32 response residual network. Outer held line is excluded from training labels and source inputs; RPE1 selects checkpoints. Model development has used aggregate held-line results, so these are development tests, not untouched final estimates.
+
+| Full generated-cell comparison | Baseline | Candidate | Interpretation |
+|---|---:|---:|---|
+| Jurkat, uncentered residual | .219159 | .245119 | PDS improves; uncapped unbiased expression MSE worsens |
+| Jurkat, centered residual | .219159 | .249920 | Raw PDS .83396→.87096; reach falls; uncapped MSE improves only36% targets |
+| HepG2, centered residual | .263551 | .261908 | Matched replicate anchors; slight net loss |
+
+HepG2 averages above use from_replicate; Jurkat uses from_baseline. Never compare their absolute magnitudes as a shared scale. HepG2 also loses on the mean of its six baseline-normalized metrics (.151770→.150169). Raw audits and normalization audit are in data/calibration/atlas_nn_*raw_audit.csv and neural_normalization_audit.json. No neural submission made.
+
+Cheap controlled follow-ups, all completed:
+
+- Within-context contrastive loss: mixed retrieval, slightly worse MSE than original centered model on both lines. Not promoted.
+- Rank128: worse MSE and retrieval on both lines. Oracle centered-basis error coverage rises modestly, but learned transfer does not exploit it. Not promoted.
+- ESM2 protein features: verified595,319,311-byte Altos/Arc source,300/300 challenge coverage. Training-only16-component PCA, explicit missing flag. Real vs identity-shuffled features essentially tie on Jurkat; HepG2 real improves retrieval but loses MSE. No consistent protein-specific benefit. See PROTEIN_FEATURE_BET.md and data/calibration/protein_feature_comparison.json.
+- Jiang pathway source: archive checksum verified;1,626 line/target/pathway profiles,218 distinct targets, only9 challenge overlaps. Stimulated context and missing LFCs prevent treating this as a dense steady-state source. Diagnostic agreement with centered K562 source is weak; no blend promoted. See data/jiang/inventory_summary.json and transfer_screen.csv.
+
+H1 frozen rank32 centered/no-protein check completed: full-profile MSE .00433089→.00435327, retrieval .858837→.860626, cosine .080757→.085665. Weak mixed evidence; no full scorer promoted.
+
+## 2026-10-04 official KOLF probe
+
+`submit_kolf_c125.log` confirms published entry EbA8m4YGpsYAR4SLWSYB: **.18594035**, rank213 at scoring, below aa75_c125 .18765290. The strong H1 local KOLF gain did not transfer to validation A/B/C. Best and latest submission differ. Codex made no upload.
+
+
+### 2026-10-04 Confidence weighting: full generated-cell rejection
+
+Fixed cross-context sign classifier trained on H1/HepG2, tested on Jurkat. Direct positive confidence scaling scored0.208691 vs aa75_c1250.219159. Restoring per-target nonself log-effect norm before count normalization recovered0.218415, still below baseline. Reach improved slightly (.152958→.157970), but NMAE/Jaccard deteriorated;0generator fallbacks. No submission and no further blind strength sweep. Cached hypothetical rank gains were not deployable gains. See data/calibration/aa75_signconf_s05_norm_jurkat.log and src/sign_confidence_diagnose.py.
+
+## 2026-10-04 leaderboard
+- kolf_c125 (aa75_c125 + KOLF w1): **.1859** (rank 213) vs .1877. pds .674, mse .154, nmae .167, reach .131. That's a tie,
+  as Jurkat predicted: stem sources don't help non-stem A/B/C. Best stays aa75_c125 .1877.
