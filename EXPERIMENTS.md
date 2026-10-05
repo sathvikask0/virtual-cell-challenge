@@ -644,3 +644,30 @@ Commands: `.venv/bin/python src/shared_response_rule.py --held {h1,jurkat,hepg2}
   (Jurkat), overall .62 / .73, vs .57 / .58 for "all down". k*=0 on 34/150 H1 targets. Reach is limited by sign accuracy
   at the top of our ranking, not by depth.
 - 2026-10-05: uploaded rmpc5 (user OK). Expect ~.193 if the board follows H1, ~.181 if it follows Jurkat.
+
+### Learned source-sign confidence (2026-10-05, Codex)
+
+Gradient-boosted sign-correctness classifier uses copied effect/sign/magnitude, destination gene expression, target expression, source agreement/amplitude, and target-output protein cosine. Gene/target IDs excluded. Training samples up to128 gene effects per target with |observed pooled response| >= .1, contexts balanced; RPE1 chooses confidence exponent from 0/.5/1/2/4. All three choose4. Norm-preserved effect weighting: e_new = e*p(correct)^4, then restore original target effect norm.
+
+- H1: top10 sign proxy .72378 -> .71911; MSE .00500274 -> .00491741; cosine .12309 -> .16271; retrieval .86416 -> .85839. Mixed.
+- Jurkat: sign proxy .778 -> .79333; MSE .02243982 -> .02245210; retrieval .85951 -> .87396. Mixed.
+- HepG2: sign proxy .77933 -> .80533; MSE .03076029 -> .03062613; cosine .15669 -> .16897; retrieval .86846 -> .87172. Promising.
+
+These are desired-profile and large-response ranking proxies, not official DE reach. Full emitted-cell tests started on HepG2, names learned_sign_bulk (bulk only) and learned_sign_dual (bulk+per-cell). Both use fixed RPE1-selected exponent; no held-label tuning. Logs data/calibration/learned_sign_hepg2_{bulk,dual}_score.log. Full scorer results pending. No upload.
+
+Early generated-cell mean-error audit for learned confidence: pooled-only .03268616 -> .03266475; dual .03268616 -> .03270225. Both paired-target bootstrap intervals include zero. This is plain pseudobulk MSE, no capped sampling correction. Full six-metric scores pending. Artifact `data/calibration/learned_sign_hepg2_generated_mse.json`.
+
+### Confidence profile integration audit
+
+- 2026-10-05 (Codex): Learned-sign integration audit: HepG2 global profile normalization reduces the common-axis MSE gain to ~2.0e-5 across native genes, and emitted pooled-only retains it (~2.1e-5); dual weighting reverses it. Generated desired-change cosine bulk .707/dual .737. Tried preserving modeled-subset mass as separate desired-profile diagnostic: retrieval improves all contexts vs global normalization, but MSE worsens on Jurkat/HepG2; H1 all metrics improve over baseline. Not a universal fix, no third scorer launched. data/calibration/learned_sign_hepg2_realization.json and learned_sign_mass_preservation.json. Existing bulk/dual scorer children still in progress; no upload.
+
+### Learned-confidence full HepG2 results
+
+- 2026-10-05 (Codex): Learned-sign HepG2 FULL results COMPLETE: dual improves replicate .26355075 -> .26962382 (+.0060731), baseline .15176974 -> .16884866 (+.0170789), identical verified anchor/bundle digests. Replicate metric deltas FID+.15538/REACH+.03272/PDS+.04111, NMAE-.08853/JAC-.10425; MSEscore0. One generator fallback at .8. Bulk-only mixed (replicate-.00321,baseline+.00250). Plain dual MSE slightly worse, CI includes0; gain is direction/discrimination scores, not capped-MSE artifact. Both completed prediction h5ads deleted by authorized cleanup. Taking next TWO free slots for unchanged dual H1 and Jurkat replication; no upload.
+
+### Separate response-presence head (Codex)
+
+- 2026-10-05 (Codex): Response-presence head tested three contexts, RPE1 selects power0 everywhere (leave sign-only rule unchanged). Presence is |true pooled delta|>=.1, not DE significance. Held AUC H1 .6943/Jurkat .6015/HepG2 .5987, poor context calibration: predicted presence H1 .229 vs real .083; HepG2 .359 vs .478. Rejected as weighting feature. src/response_presence_head.py; data/calibration/response_presence_comparison.json. Jurkat full dual sign run completed .219159 -> .224867, legacy anchors now being verified via fresh same-reference scoring. Jurkat slot RELEASED; H1 slot remains occupied. No upload.
+- **rmpc5 leaderboard: .1943 (rank 223), new best** vs aa75_c125 .1877. pds .671 -> .713; mse .161, nmae .167, fid -.011,
+  reach .134, jac .002 all flat. The board followed H1 again (pds up, nothing else moves), not Jurkat. H1 is the
+  trusted predictor for pds-type changes on 2026. New default recipe: aa75_c125 + pcs=100 pcg=-1 pchi=5 pcn=1.
