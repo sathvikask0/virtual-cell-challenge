@@ -679,3 +679,8 @@ Early generated-cell mean-error audit for learned confidence: pooled-only .03268
   - H1 .242 vs rmpc5 .241 (tie; reach .053 -> .058, nmae -.032 -> -.051).
   - Plain mse better than rmpc5 on 99% (H1) / 97% (Jurkat) of targets.
   - HepG2: u3b15 vs aa75_c125: fid .216 -> .283, nmae .038 -> .058, pds .624 -> .628, reach flat (mean of 6 ~.152 -> .166). Built + validated data/submissions/u3b15.vcc (0 fallbacks); candidate for 2026-10-06 05:30 IST slot.
+
+### 2026-10-05 learned confidence + neural combination
+
+Full emitted-cell scores: H1 .242507, Jurkat .245837, zero generator fallbacks. Both exceed neural-half and rmpc5 locally; fresh scoring used identical SHA-checked baseline reference files. Comparisons: data/calibration/learned_sign_combo_shared_reference.json. Plain generated-cell MSE: data/calibration/learned_sign_combo_plain_mse.json. HepG2 replication pending available scorer slot. No upload. Three-class signed response cheap pilot completed on all3: MSE improves but retrieval worsens throughout; not promoted. data/calibration/signed_response_comparison.json.
+- u3b2 (cboost 2): Jurkat .256 (fid .450, reach .209, jac -.003) vs u3b15 .241; H1 .239 vs .242 (nmae -.051 -> -.077). Not a clear win on both; u3b15 stays first for 2026-10-06 05:31 IST. u3b2 built as 2nd-slot candidate if u3b15 lifts board fid/reach.
