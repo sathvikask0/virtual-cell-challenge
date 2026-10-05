@@ -671,3 +671,10 @@ Early generated-cell mean-error audit for learned confidence: pooled-only .03268
 - **rmpc5 leaderboard: .1943 (rank 223), new best** vs aa75_c125 .1877. pds .671 -> .713; mse .161, nmae .167, fid -.011,
   reach .134, jac .002 all flat. The board followed H1 again (pds up, nothing else moves), not Jurkat. H1 is the
   trusted predictor for pds-type changes on 2026. New default recipe: aa75_c125 + pcs=100 pcg=-1 pchi=5 pcn=1.
+- **u3b15** = rmpc5 + boost ×1.5 the per-cell change of genes whose ≥3 sources all agree in sign (`cq=1 cboost=1.5
+  csupp=1 cmin=3`; new `cmin` option). Motivation: sign accuracy among our top-50 ranked real-DE genes is .82 (H1) / .90
+  (Jurkat) when ≥3 sources are unanimous vs .55-.70 otherwise; offline unanimous-first lifts Jurkat raw reach .308 -> .372.
+  Unlike cons10 (Oct 3), nothing is suppressed.
+  - Jurkat **.241** vs rmpc5 .210 / aa75_c125 .219 (fid .272 -> .372, reach .117 -> .187, nmae .076 -> .099).
+  - H1 .242 vs rmpc5 .241 (tie; reach .053 -> .058, nmae -.032 -> -.051).
+  - Plain mse better than rmpc5 on 99% (H1) / 97% (Jurkat) of targets.
