@@ -602,3 +602,8 @@ Fixed cross-context sign classifier trained on H1/HepG2, tested on Jurkat. Direc
   | H1 | .2365 | .2333 | .747→.705 | .078→.102 |
 
   Plain mse better on 86% (Jurkat) / 63% (H1) of targets, so it's real. HepG2 check running.
+- **Leaderboard: pca_c125 = .1765** (rank 269) vs .1877. pds .671→**.584**, mse .162→.183. HepG2 confirmed the Jurkat
+  gain (.2636→.2710), but the **leaderboard followed H1** (pds down).
+  - Lesson: for changes that move pds, trust H1 (same 10x Flex platform as 2026), not Jurkat/HepG2 (10x 3').
+  - Earlier lessons still hold: for source choice, don't trust H1 (stem biology); for mse, check plain mse.
+  - g 4 version not submitted.
