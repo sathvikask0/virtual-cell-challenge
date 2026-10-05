@@ -587,3 +587,18 @@ Fixed cross-context sign classifier trained on H1/HepG2, tested on Jurkat. Direc
 ## 2026-10-04 leaderboard
 - kolf_c125 (aa75_c125 + KOLF w1): **.1859** (rank 213) vs .1877. pds .674, mse .154, nmae .167, reach .131. That's a tie,
   as Jurkat predicted: stem sources don't help non-stem A/B/C. Best stays aa75_c125 .1877.
+
+## 2026-10-05 context PCA boost (new lever: destination control covariance)
+- Real target-specific effects are concentrated in the destination controls' top PCs (100 PCs: 31% H1 / 18% Jurkat of
+  the energy vs 7% / 13% in ours).
+- Plain boost E + 4P over PCs 1–100 raises corr(pred, real) by 28%, but collapses retrieval:
+  H1 full scorer .2197 (pds .747→.609).
+- **Target-specific boost** (P from E minus the panel mean, PCs 4–100, g 2, norm kept; `pcs=100 pcg=2 pclo=3 pcspec=1
+  pcn=1`):
+
+  | | aa75_c125 | PCA boost | pds | mse |
+  |---|---|---|---|---|
+  | Jurkat | .2192 | **.2398** | .660→.732 | .124→.174 |
+  | H1 | .2365 | .2333 | .747→.705 | .078→.102 |
+
+  Plain mse better on 86% (Jurkat) / 63% (H1) of targets, so it's real. HepG2 check running.

@@ -158,10 +158,13 @@ def capture_controls(k=100, n=4000):
     A.control_stats = stats
 
 
-def pca_smooth(E, own, lam, renorm):
-    V = CTX["V"]
-    P = (np.where(own, 0, E) @ V) @ V.T
-    out = (1 - lam) * E + lam * P
+def pca_smooth(E, own, lam, renorm, g=0.0, lo=0, spec=0):
+    """lam: blend toward the projection, or g > 0: E + g * P. lo: skip the first lo PCs.
+    spec: project only the target-specific part (E minus the mean over this panel's targets)."""
+    V = CTX["V"][:, int(lo):]
+    E0 = np.where(own, 0, E)
+    P = ((E0 - E0.mean(0) if spec else E0) @ V) @ V.T
+    out = E + g * P if g else (1 - lam) * E + lam * P
     if renorm:
         n0 = np.linalg.norm(np.where(own, 0, E), axis=1, keepdims=True)
         n1 = np.linalg.norm(np.where(own, 0, out), axis=1, keepdims=True)
@@ -169,7 +172,7 @@ def pca_smooth(E, own, lam, renorm):
     return np.where(own, E, out)
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -259,10 +262,10 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             top = agree & (E >= thr)
             print(f"  DE consensus: boosted genes per target median {np.median(top.sum(1)):.0f}", flush=True)
             ec = np.where(own, ec, ec * np.where(top, cboost, csupp))
-        if pcl:  # context PCA smoothing of the pooled change (and of the per-cell change if pcc)
-            eb = pca_smooth(eb, own, pcl, pcn)
+        if pcl or pcg:  # context PCA smoothing of the pooled change (and of the per-cell change if pcc)
+            eb = pca_smooth(eb, own, pcl, pcn, pcg, pclo, pcspec)
             if pcc:
-                ec = pca_smooth(ec, own, pcc, pcn)
+                ec = pca_smooth(ec, own, pcc, pcn, pcg, pclo, pcspec)
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:
