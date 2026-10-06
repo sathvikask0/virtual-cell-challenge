@@ -747,3 +747,9 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
 - The 300 2026 targets have **0** overlap with Nadig's 2,394 Jurkat/HepG2 targets (no direct copy).
 - Consequence: our Jurkat local eval is context A's own line (different platform). Test ctxA_u3b2: rmpc5 on B/C,
   rmpc5 + u3b2 boost on A only (`A:cq=1 A:cboost=2 A:csupp=1 A:cmin=3`, new per-context override syntax).
+- DepMap CRISPRGeneEffect: target essentiality predicts response size (Jurkat non-essential median 13 DE genes vs
+  122-227 essential), but own-line effect is no better than K562 or the pan-line mean (spearman -.22/-.26/-.24 Jurkat).
+  **2026 panel is ~all non-essential** (Jurkat: 14/300 < -.5, 0 < -1; CAL-33: 9/300, 0), unlike our local evals.
+  Raw per-target metrics on non-essential targets only (scratch subset.py): H1 u3b15 raises nmae .961 -> .975 (matches
+  the board), fid flat; Jurkat u3b2: fid .35 -> .46, reach .40 -> .46, nmae .867 -> .847, but jac .118 -> .030.
+  Use the non-essential subset as the board-like proxy from now on.
