@@ -29,12 +29,12 @@ uploaded `rmpc5.vcc` (log: `data/calibration/dry_pipeline.log`). Upload takes ~2
 
 | Identity of a final context | Recipe | Why |
 |---|---|---|
-| **HCT116, HEK293T or K562** (we have that line's own genome-wide screen) | rmpc5 with that source weighted very high, e.g. `hct116=20` | Within-line responses repeat far better than cross-line (split-half r ~.33 vs ~.02 on weak knockdowns). Potentially the biggest single gain. Needs a per-context source weight (see TODO). |
+| **HCT116, HEK293T or K562** (we have that line's own genome-wide screen) | rmpc5 with that source weighted very high, e.g. `hct116=20` | Within-line responses repeat far better than cross-line (split-half r ~.33 vs ~.02 on weak knockdowns). Potentially the biggest single gain. Use `D:hct116=20` (per-context, verified). |
 | **Jurkat / T-cell** | rmpc5 (u3b2 on that context only is the Jurkat-local winner but did not hold on the board as u3b15) | ctxA_u3b2 never tested on the board. |
 | **Stem-like** (src/final_router.py stem score >= 3) | stem recipe: + `kolf=2 ipsc=2` | H1 .2712 vs .2365. |
 | anything else | rmpc5 | Board best .1943. |
 
 ## TODO before Oct 22
-- Per-context source weights are implemented (`D:hct116=20` etc. in `agree_alloc.py`), not yet exercised in a build.
+- Per-context source weights (`D:hct116=20` etc. in `agree_alloc.py`) verified 2026-10-06: a full build with `A:k562=10` validated and changed only context A.
 - Measure the same-line gain locally: e.g. HCT116 as destination is not possible (no local real HCT116 cells), so use
   Jurkat/HepG2 split halves: predict half B from half A of the same line vs from other lines.
