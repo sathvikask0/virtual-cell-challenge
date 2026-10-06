@@ -728,3 +728,7 @@ H1 seed1 combo .243283 vs u3b15 .241544, fresh shared-reference verification; pl
   always loses; boosting confident genes (u3b15/u3b2) wins. The per-cell lever is "add power where sure", not "de-call".
 - u4b2 (cmin 4, x2): H1 .241 / Jurkat .218 vs u3b15 .242/.241. Boosting fewer genes loses; breadth matters. Next: cmin 2.
 - u2b15 (cmin 2, x1.5; 6.7k/2.5k genes boosted): H1 .239 / Jurkat .237 vs u3b15 .242/.241. cmin 3 is the sweet spot. u3b15 stays first for 05:31 IST.
+- **2026-10-06 u3b15 leaderboard .1920 (rank 238)** vs rmpc5 .1943. pds .716 (+.003), mse .168 (+.007), nmae .130
+  (-.037), fid -.008 (+.003), reach .144 (+.010), jac .002. The boost buys reach/mse but costs fold-change size (nmae),
+  exactly H1's pattern (tie, nmae -.032 -> -.051); Jurkat (+.031) overstated it. H1 again is the better board proxy.
+  u3b2 (H1 nmae -.077) not uploaded. Idea: keep the boost's p-value effect but undo its fold-change inflation.
