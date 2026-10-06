@@ -777,3 +777,11 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   2026 targets are in the vocabulary.** Using State for 2026 needs retraining with gene-embedding perturbation
   features on genome-wide data (K562 GW + X-Atlas): a GPU project, still bounded by weak cross-line transfer.
 - Realistic cell variance (pool=1/2 on rmpc5), H1: pool2 .238, pool1 .229 vs .241. Non-essential subset raw: pool1 plain mse .0020 -> .0015 (real gain), reach .18 -> .21, pds .883 -> .886, but fid .52 -> .46 and jac .073 -> .049. Raw fid there (~.52) is near the board's raw level, so the fid loss likely transfers; net expected negative. Not uploaded.
+- **PIE (Arc, 2026-10-05; replogle_xdataset checkpoint, trained on Tahoe/Jiang/VCC25/X-Atlas, no Jurkat labels)** run on
+  Modal (src/modal_pie.py; ~$1-2) for our 150 held-out Jurkat targets (data/calibration/pie_vs_ours.py):
+  - alone, much weaker than ours: corr -.015 vs .060, retrieval .550 vs .844, sign_top50 .725 vs .781.
+  - but complementary on direction: real-DE pairs, ours right .703; PIE agrees .801 / disagrees .555.
+    Within >=3-source-unanimous genes: PIE agrees .902 (n=9,385) / disagrees .720; not unanimous: .752 / .516.
+  - "unanimous & PIE agrees" is the first gene set at the 90% purity reach needs. Candidate: target the u3 boost
+    (or p-value order) at that set only. Caveats: H1 can't test it (VCC25 H1 is in PIE's training); HeLa/CAL-33
+    have no PIE context text (needs an OpenAI embedding or a stand-in context).
