@@ -158,6 +158,23 @@ def capture_controls(k=100, n=4000):
     A.control_stats = stats
 
 
+def pie_signs(targets, genes):
+    """targets x genes array of PIE lfc_pred (NaN where missing), from env PIE_PRED=parquet and PIE_GENES=json list."""
+    import json
+    import polars as pl
+    P = pl.read_parquet(os.environ["PIE_PRED"])
+    pg = json.load(open(os.environ["PIE_GENES"]))
+    col = {g: i for i, g in enumerate(pg)}
+    ti = {t: i for i, t in enumerate(P["perturbation"].to_list())}
+    L = np.array(P["lfc_pred"].to_list(), np.float32)
+    out = np.full((len(targets), len(genes)), np.nan, np.float32)
+    gi = np.array([col.get(g, -1) for g in genes])
+    for i, t in enumerate(targets):
+        if t in ti:
+            out[i] = np.where(gi >= 0, L[ti[t]][np.maximum(gi, 0)], np.nan)
+    return out
+
+
 def pca_smooth(E, own, lam, renorm, g=0.0, lo=0, spec=0, hi=0):
     """lam: blend toward the projection, or g > 0: E + g * P. lo: skip the first lo PCs.
     spec: project only the target-specific part (E minus the mean over this panel's targets)."""
@@ -172,7 +189,7 @@ def pca_smooth(E, own, lam, renorm, g=0.0, lo=0, spec=0, hi=0):
     return np.where(own, E, out)
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0, pchi=0, cmin=2, topk=0, dsupp=1.0, cnorm=0, ppk=0, ppg=-0.5, xg=0.0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0, pchi=0, cmin=2, topk=0, dsupp=1.0, cnorm=0, ppk=0, ppg=-0.5, xg=0.0, pie=0):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         if xg:
             mm = np.asarray(m, float); A.EXPR_W = (1e6 * mm / mm.sum(), xg)
@@ -261,6 +278,10 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             neg = sum((np.nan_to_num(x) < 0).astype(int) for x in srcs)
             nsrc = sum(np.isfinite(x).astype(int) for x in srcs)
             agree = (nsrc >= cmin) & ((pos == nsrc) | (neg == nsrc))
+            if pie:  # also require PIE (Arc) predicted lfc to share the fused sign (PIE_PRED: parquet + gene list)
+                pm = pie_signs(targets, genes)
+                agree &= np.sign(pm) == np.sign(np.where(own, 0, ec))
+                print(f"  PIE agreement: {np.isfinite(pm).any(1).sum()} targets with PIE predictions", flush=True)
             E = np.abs(np.where(own, 0, ec))
             thr = np.quantile(E, 1 - cq, axis=1, keepdims=True)
             top = agree & (E >= thr)

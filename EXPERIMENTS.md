@@ -785,3 +785,4 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   - "unanimous & PIE agrees" is the first gene set at the 90% purity reach needs. Candidate: target the u3 boost
     (or p-value order) at that set only. Caveats: H1 can't test it (VCC25 H1 is in PIE's training); HeLa/CAL-33
     have no PIE context text (needs an OpenAI embedding or a stand-in context).
+  - PIE-gated boost (u3 & PIE-agree only, ~944 genes/target; pie=1): Jurkat u3pie1.5 .232 vs u3b15 .241; u3pie2 .245 vs u3b2 .256. Narrower set loses (fid/reach down). PIE adds no usable lever here. Modal spend ~$3.
