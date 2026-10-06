@@ -759,3 +759,10 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   (HCT116~HEK293T) / .012 / .011 (with K562); moderately essential .03-.05; essential (< -1) .08-.10. The 2026 panel is
   ~all non-essential, so cross-line transfer carries almost no signal there: a learned transfer model has little to
   learn. Explains the plateau of all copy/vote/neural approaches.
+- Within-line split-half (scratch splithalf.py), panel-mean removed, own+panel genes out: H1 non-essential targets
+  median r .325 (76% > .2) at ~100 cells/half; Jurkat non-essential .17. So weak knockdowns have a REAL, reproducible,
+  target-specific response, but it is line-specific (cross-line r ~.02 above).
+- Control co-expression prior (pred = -corr(gene, target) over 5,000 control cells; scratch coexpr.py): correlation with
+  the real target-specific change ~0 (H1 .004, Jurkat -.013) vs ours .055 / .112. Dead end.
+- Net: ceiling for weak targets is large (split-half .33 vs ours .055 on H1) but no zero-shot source found that carries
+  the line-specific part. Option 3 (learned transfer) has nothing to learn from for the 2026 regime.
