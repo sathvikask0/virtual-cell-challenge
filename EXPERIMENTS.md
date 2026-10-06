@@ -793,3 +793,9 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   .20 (rest .03) and the LS-optimal scale on the raw fused change is .40: the pattern, not the size, is wrong,
   so amplitude tuning caps out (~cos^2). Several are stem-specific TFs (PRDM14, SOX2, SALL4) with no
   cross-line analogue. Top teams' mse .25-.70 imply much better patterns on the strong knockdowns.
+- **State retrained (Modal, src/modal_state.py; ESM2 perturbation features; K562 GW + RPE1 + Nadig Jurkat/HepG2,
+  <=40 cells/target, ~708k cells, 2,000 HVGs of 6,124 shared genes; 20k steps on L40S, ~45 min), H1 held out
+  zero-shot:** chance level. On 150 H1 targets (data/calibration/state_pilot_vs_ours_h1.py): corr .004, retrieval
+  .514, sign_top50 .509 vs ours rmpc5 .108 / .821 / .661. State's own eval: pearson_delta -.001, discrimination
+  cosine .513. Predictions vary per target but in random directions (median inter-target cosine .055). Dropped.
+  Modal spend for the pilot ~$6-8 (of $30 free credit).

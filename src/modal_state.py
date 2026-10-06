@@ -14,8 +14,8 @@ import modal
 app = modal.App("vcc-state")
 vol = modal.Volume.from_name("vcc-state", create_if_missing=True)
 cpu_img = modal.Image.debian_slim(python_version="3.12").pip_install(
-    "anndata==0.11.4", "h5py", "numpy<2.3", "pandas", "scipy", "scanpy", "toml")
-gpu_img = modal.Image.debian_slim(python_version="3.12").pip_install("arc-state==0.11.1")
+    "anndata==0.11.4", "h5py==3.16.0", "numpy<2.3", "pandas<3", "scipy", "scanpy==1.10.4", "typing_extensions>=4.12", "toml")
+gpu_img = modal.Image.debian_slim(python_version="3.12").pip_install("arc-state==0.11.1", "h5py==3.16.0")
 
 URLS = {"k562gw": "https://ndownloader.figshare.com/files/35775507",   # K562_gwps_raw_singlecell_01.h5ad
         "rpe1": "https://ndownloader.figshare.com/files/35775606"}     # rpe1_raw_singlecell_01.h5ad
@@ -23,7 +23,7 @@ PER_TARGET, N_CTRL, BLOCK = 40, 20000, 50000
 
 
 @app.function(image=cpu_img, volumes={"/vol": vol}, cpu=4, memory=32768, timeout=4 * 3600,
-              ephemeral_disk=150 * 1024)
+              ephemeral_disk=512 * 1024)
 def fetch(name: str):
     """Download a Replogle raw single-cell h5ad to local disk, stream it in row blocks, keep a subsample."""
     import shutil
@@ -68,8 +68,10 @@ def fetch(name: str):
             print(f"  {name}: rows {s:,}/{len(lab):,}", flush=True)
     M = sp.vstack(rows).tocsr()
     genes = var["gene_name"].astype(str).to_numpy() if "gene_name" in var else var.index.astype(str).to_numpy()
-    o = pd.DataFrame({"gene": lab[keep], "cell_type": name, "gem_group": obs["gem_group"].astype(str).to_numpy()[keep]})
-    a = ad.AnnData(M, obs=o, var=pd.DataFrame(index=genes))
+    o = pd.DataFrame({"gene": np.asarray(lab[keep], dtype=object), "cell_type": name,
+                      "gem_group": np.asarray(obs["gem_group"].astype(str).to_numpy()[keep], dtype=object)},
+                     index=pd.Index([str(i) for i in keep], dtype=object))
+    a = ad.AnnData(M, obs=o, var=pd.DataFrame(index=pd.Index(np.asarray(genes, dtype=object), dtype=object)))
     a.var_names_make_unique()
     a.write_h5ad(f"/vol/raw/{name}.h5ad", compression="gzip")
     vol.commit()
@@ -85,7 +87,21 @@ def build(n_hvg: int = 2000, test: str = "h1"):
     import toml
 
     names = ["k562gw", "rpe1", "jurkat", "hepg2", "h1"]
+    import json
+    import os
     A = {n: ad.read_h5ad(f"/vol/raw/{n}.h5ad") for n in names}
+    for n in ("k562gw", "rpe1"):  # legacy categorical var in the Replogle files read back as codes: restore symbols
+        gfile = f"/vol/raw/{n}_genes.json"
+        if os.path.exists(gfile):
+            g = json.load(open(gfile))
+            assert len(g) == A[n].n_vars, (n, len(g), A[n].n_vars)
+            A[n].var_names = g
+            A[n].var_names_make_unique()
+            print(f"  {n}: gene names restored, e.g. {g[:3]}", flush=True)
+    for n, a in A.items():
+        print(f"  {n}: {a.shape}, obs columns {list(a.obs.columns)}", flush=True)
+        if "gene" not in a.obs.columns:
+            raise ValueError(f"{n}: no obs 'gene' column")
     common = sorted(set.intersection(*(set(a.var_names) for a in A.values())))
     print(f"shared genes {len(common)}", flush=True)
     pooled = []
@@ -104,6 +120,12 @@ def build(n_hvg: int = 2000, test: str = "h1"):
     for n, a in A.items():
         b = a[:, hvg].copy()
         b.obsm["X_hvg"] = np.asarray(b.X.toarray() if hasattr(b.X, "toarray") else b.X, np.float32)
+        # State's loader reads obs/_index and var/_index as plain string datasets: no nullable strings
+        import pandas as pd
+        b.obs_names = pd.Index(np.asarray(b.obs_names, dtype=object), dtype=object)
+        b.var_names = pd.Index(np.asarray(b.var_names, dtype=object), dtype=object)
+        for c in b.obs.columns:
+            b.obs[c] = pd.Categorical(np.asarray(b.obs[c], dtype=object))
         b.write_h5ad(f"/vol/proc/{n}.h5ad")
         print(f"  {n}: {b.n_obs:,} cells", flush=True)
     cfg = {"datasets": {n: f"/vol/proc/{n}.h5ad" for n in names},
