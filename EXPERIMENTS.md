@@ -776,3 +776,4 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
 - **All public State Replogle checkpoints use one-hot perturbations over 2,024 essential-screen genes: 0 of the 300
   2026 targets are in the vocabulary.** Using State for 2026 needs retraining with gene-embedding perturbation
   features on genome-wide data (K562 GW + X-Atlas): a GPU project, still bounded by weak cross-line transfer.
+- Realistic cell variance (pool=1/2 on rmpc5), H1: pool2 .238, pool1 .229 vs .241. Non-essential subset raw: pool1 plain mse .0020 -> .0015 (real gain), reach .18 -> .21, pds .883 -> .886, but fid .52 -> .46 and jac .073 -> .049. Raw fid there (~.52) is near the board's raw level, so the fid loss likely transfers; net expected negative. Not uploaded.
