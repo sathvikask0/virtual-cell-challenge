@@ -737,3 +737,13 @@ H1 seed1 combo .243283 vs u3b15 .241544, fresh shared-reference verification; pl
 - Expression-dependent transfer (scratch expr_transfer.py): per source, sign accuracy on held-out real-DE pairs drops when dest expression >= 4x source (log2 ratio >= 2): Jurkat hct116 .66 -> .47, hek293t .65 -> .51; HepG2 hct116 .71 -> .53; H1 weak (.61 -> .56 k562). ~10% of pairs. Candidate per-source per-gene down-weight in fusion; expected gain small.
 - xg1 (per-source per-gene weight min(1, 4(src+1)/(dest+1)) in fusion) on pp2: H1 .241 vs pp2 .242, Jurkat .210 vs rmpc5 .210 (mse down). Tie; dropped. Option kept (A.EXPR_W / xg).
 - Layer-1 check: LINCS (Codex caches) as sign source on top-50 ranked real-DE pairs: LINCS sign acc .51-.60 (shRNA top-quartile |z| .55-.71), coverage 17-33% of pairs; ours when shRNA agrees .711/.802/.878 vs disagrees .671/.752/.801 (H1/Jurkat/HepG2). Consensus (not per-line) data, so no per-line transfer-rule training possible; weak voter only. pp2 not uploaded (user: gain too small).
+
+## 2026-10-06: Layer 0, context identity (src/line_identity.py, DepMap 24Q4 from figshare 27993248, CC BY 4.0)
+Control pseudobulk log2(CPM+1) vs DepMap log2(TPM+1), centred by the DepMap gene mean, top-2000 variable genes, Pearson.
+Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> HCT 116 .87, RPE1 -> RPE1 .83.
+- **ctx_A -> JURKAT .89** (next PF-382 .79): T-ALL, very likely Jurkat.
+- **ctx_B -> HeLa .74** (next .40): almost certainly HeLa.
+- **ctx_C -> CAL-33 .78** (next CAL 27 .67): head & neck squamous, likely CAL-33.
+- The 300 2026 targets have **0** overlap with Nadig's 2,394 Jurkat/HepG2 targets (no direct copy).
+- Consequence: our Jurkat local eval is context A's own line (different platform). Test ctxA_u3b2: rmpc5 on B/C,
+  rmpc5 + u3b2 boost on A only (`A:cq=1 A:cboost=2 A:csupp=1 A:cmin=3`, new per-context override syntax).

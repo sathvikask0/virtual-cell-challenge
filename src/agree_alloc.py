@@ -315,6 +315,12 @@ if __name__ == "__main__":
         line, name, rest = rest[0], rest[1], rest[2:]
     else:
         line, name, rest = "2026", rest[0], rest[1:]
+    ctx_o = {}  # per-context overrides for the 2026 build, e.g. A:cboost=2 (context A only)
+    for a in [a for a in rest if ":" in a.split("=")[0]]:
+        k, v = a.split("=")
+        c, k = k.split(":")
+        ctx_o.setdefault(c, {})[k] = float(v)
+    rest = [a for a in rest if ":" not in a.split("=")[0]]
     o = {k: float(v) for k, v in (a.split("=") for a in rest)}
     ac, ab = o.pop("ac", 1.0), o.pop("ab", 0.5)
     pool = int(o.pop("pool", 4))
@@ -345,6 +351,9 @@ if __name__ == "__main__":
         import context_weights as CW
         CW.use_x()
     A.profiles = make_profiles(**o)
+    for c, ov in ctx_o.items():
+        A.CTX_PROFILES[c] = make_profiles(**{**o, **ov})
+        print(f"  context {c} overrides: {ov}", flush=True)
     A.dual_moment_counts = soft_generator()
     print(f"{line}/{name}: agreement allocation {o}, ac={ac}, ab={ab}", flush=True)
     if cmd == "local":
