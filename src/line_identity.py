@@ -5,7 +5,7 @@ Both sides are centred per gene by the DepMap mean, restricted to the most varia
 then Pearson-correlated against every DepMap line. Known lines (Jurkat, HepG2, K562, HCT116, HEK293T)
 are a sanity check: they should map to themselves.
 
-Usage (from src/): python line_identity.py [n_genes]
+Usage (from src/): python line_identity.py [n_genes] [name ...]   (names default to A/B/C + known lines)
 """
 import sys
 
@@ -33,10 +33,10 @@ def profile(name):
     return pd.Series(np.log2(1e6 * c / c.sum() + 1), index=z["genes"].astype(str))
 
 
-def main(n_genes=2000):
+def main(n_genes=2000, names=NAMES):
     X, M = depmap()
     label = M.reindex(X.index)
-    for name in NAMES:
+    for name in names:
         try:
             p = profile(name)
         except FileNotFoundError:
@@ -58,4 +58,4 @@ def main(n_genes=2000):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]) if len(sys.argv) > 1 else 2000)
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else 2000, sys.argv[2:] or NAMES)

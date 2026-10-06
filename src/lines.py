@@ -22,6 +22,7 @@ Output: data/lines/{line}.npz with
 
 Usage: python src/lines.py [line ...]
 """
+import os
 import sys
 from pathlib import Path
 
@@ -107,6 +108,9 @@ LINES = {
     "jurkat": lambda: from_singlecell(ROOT / "data/nadig/jurkat_raw_singlecell.h5ad", "gene"),
     **{f"ctx_{c}": (lambda c=c: from_singlecell(
         ROOT / f"data/vcc/controls/context_{c}.h5ad", "target_gene")) for c in "ABC"},
+    **{f"ctx_{c}": (lambda c=c: from_singlecell(  # final round: VCC_CTRL_DIR + VCC_CONTEXTS
+        Path(os.environ["VCC_CTRL_DIR"]) / f"context_{c}.h5ad", "target_gene"))
+       for c in os.environ.get("VCC_CONTEXTS", "").split(",") if c and c not in "ABC"},
 }
 
 

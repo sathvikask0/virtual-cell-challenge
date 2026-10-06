@@ -44,9 +44,9 @@ import scipy.sparse as sp
 import zstandard as zstd
 
 ROOT = Path(__file__).resolve().parent.parent
-CTRL_DIR = ROOT / "data/vcc/controls"
+CTRL_DIR = Path(os.environ.get("VCC_CTRL_DIR", ROOT / "data/vcc/controls"))  # final round: set VCC_CTRL_DIR
 SOURCES = ["h1", "k562", "rpe1", "hepg2", "jurkat"]
-CONTEXTS = ["A", "B", "C"]
+CONTEXTS = os.environ.get("VCC_CONTEXTS", "A,B,C").split(",")  # final round: e.g. VCC_CONTEXTS=D,E,F
 CELLS = 400
 ALPHA = 0.5
 EPS = 1e-5

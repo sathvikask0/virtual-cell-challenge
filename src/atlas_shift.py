@@ -35,7 +35,7 @@ import scipy.sparse as sp
 from third_party.atlasshift_model import apply_promoter_prior, desired_mean, dual_moment_counts
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data/atlas_shift"
+OUT = Path(os.environ.get("ATLAS_CACHE", ROOT / "data/atlas_shift"))  # final round: separate cache dir
 WEIGHTS = {"k562": 2.0, "h1": 2.0, "hct116": 1.0, "hek293t": 1.0}
 if os.environ.get("ATLAS_K562") == "cpm":  # K562 from the per-cell file (src/k562_cells.py)
     WEIGHTS = {("k562_cpm" if k == "k562" else k): w for k, w in WEIGHTS.items()}
@@ -45,12 +45,16 @@ EXPR_W = None  # (dest cpm over genes_out, gamma): per-gene source weight min(1,
 CHUNK = 1000
 
 
+def ctrl_dir():
+    return Path(os.environ.get("VCC_CTRL_DIR", ROOT / "data/vcc/controls"))
+
+
 def genes26():
-    return pd.read_csv(ROOT / "data/vcc/controls/gene_names.csv")["gene_name"].to_numpy(str)
+    return pd.read_csv(ctrl_dir() / "gene_names.csv")["gene_name"].to_numpy(str)
 
 
 def wanted_targets():
-    t26 = set(pd.read_csv(ROOT / "data/vcc/controls/pert_counts.csv")["target_gene"])
+    t26 = set(pd.read_csv(ctrl_dir() / "pert_counts.csv")["target_gene"])
     return t26 | set(np.load(ROOT / "data/lines/h1.npz")["targets"])
 
 
@@ -283,7 +287,7 @@ def build_2026(name, ac=0.6, ab=0.3, pool=4):
     """The 2026 submission: 300 targets x 400 cells x contexts A, B, C, packaged as .vcc."""
     import predict_2026 as P
     genes = genes26()
-    targets = pd.read_csv(ROOT / "data/vcc/controls/pert_counts.csv")["target_gene"].to_numpy(str)
+    targets = pd.read_csv(ctrl_dir() / "pert_counts.csv")["target_gene"].to_numpy(str)
     pool = int(pool)
 
     def blocks():

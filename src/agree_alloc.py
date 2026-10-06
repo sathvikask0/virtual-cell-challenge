@@ -373,8 +373,20 @@ if __name__ == "__main__":
         CW.use_x()
     A.profiles = make_profiles(**o)
     for c, ov in ctx_o.items():
-        A.CTX_PROFILES[c] = make_profiles(**{**o, **ov})
-        print(f"  context {c} overrides: {ov}", flush=True)
+        src = {k: ov.pop(k) for k in list(ov) if k in ("kolf", "hct116", "hek293t", "k562", "h1")}
+        prof = make_profiles(**{**o, **ov})
+        if src:  # per-context source weights, e.g. D:hct116=20 when context D is identified as HCT116
+            def prof_w(*a, _p=prof, _src=src, **kw):
+                saved = A.WEIGHTS
+                A.WEIGHTS = {k: v for k, v in {**saved, **_src}.items() if v > 0}
+                try:
+                    return _p(*a, **kw)
+                finally:
+                    A.WEIGHTS = saved
+            A.CTX_PROFILES[c] = prof_w
+        else:
+            A.CTX_PROFILES[c] = prof
+        print(f"  context {c} overrides: {ov} source weights: {src}", flush=True)
     A.dual_moment_counts = soft_generator()
     print(f"{line}/{name}: agreement allocation {o}, ac={ac}, ab={ab}", flush=True)
     if cmd == "local":
