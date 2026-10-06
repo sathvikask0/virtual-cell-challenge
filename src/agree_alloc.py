@@ -172,7 +172,7 @@ def pca_smooth(E, own, lam, renorm, g=0.0, lo=0, spec=0, hi=0):
     return np.where(own, E, out)
 
 
-def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0, pchi=0, cmin=2, topk=0, dsupp=1.0, cnorm=0):
+def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, srcw=0.0, nr=0.0, nrmax=3.0, gconf=0.0, ew=0.0, eb_boost=0.0, ek=500.0, pc=0.0, cq=0.0, cboost=1.6, csupp=0.5, ipsc=0.0, pcl=0.0, pcc=0.0, pcn=0.0, pcg=0.0, pclo=0, pcspec=0, pchi=0, cmin=2, topk=0, dsupp=1.0, cnorm=0, ppk=0, ppg=-0.5):
     def profiles(targets, genes, m, q, ac, ab, exclude=(), agree=0, thr=0.0):
         ec, eb = A.fused(targets, genes, exclude)
         den = np.zeros_like(ec)
@@ -284,6 +284,15 @@ def make_profiles(alpha=0.75, beta=0.75, cell=0, cd4=1.0, floor=0.02, smax=2.0, 
             eb = pca_smooth(eb, own, pcl, pcn, pcg, pclo, pcspec, pchi)
             if pcc:
                 ec = pca_smooth(ec, own, pcc, pcn, pcg, pclo, pcspec, pchi)
+        if ppk:  # remove ppg x the top-ppk principal directions of this panel's predicted pooled changes (own genes out)
+            E0 = np.where(own, 0, eb)
+            Vt = np.linalg.svd(E0, full_matrices=False)[2][:int(ppk)]
+            P = (E0 @ Vt.T) @ Vt
+            n0 = np.linalg.norm(E0, axis=1, keepdims=True)
+            E1 = E0 + ppg * P
+            E1 = E1 * n0 / (np.linalg.norm(E1, axis=1, keepdims=True) + 1e-12)
+            eb = np.where(own, eb, E1)
+            print(f"  predicted-PC removal: top {int(ppk)} x {ppg}", flush=True)
         keep_own = own  # the knocked-down gene keeps its full change
         eb = np.where(keep_own, eb, eb * s[:, None])
         if cell:
