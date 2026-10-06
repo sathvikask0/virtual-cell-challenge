@@ -786,3 +786,10 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
     (or p-value order) at that set only. Caveats: H1 can't test it (VCC25 H1 is in PIE's training); HeLa/CAL-33
     have no PIE context text (needs an OpenAI embedding or a stand-in context).
   - PIE-gated boost (u3 & PIE-agree only, ~944 genes/target; pie=1): Jurkat u3pie1.5 .232 vs u3b15 .241; u3pie2 .245 vs u3b2 .256. Narrower set loses (fid/reach down). PIE adds no usable lever here. Modal spend ~$3.
+- **Why our board mse lags (cell_eval2 0.16 source + H1 breakdown, 2026-10-06):** the noise credit
+  (r * min(tr Sigma_pred/n, k tr Sigma_real/n), k=1, #348) is only ~3% of our error (H1 capped .00299 vs
+  uncapped .00290), so the gap is real accuracy. The score is sum(error)/sum(real change): on H1 the 20 strongest
+  knockdowns are 67% of it and our ratio there is .916. For those 20, cosine(fused source change, real) median
+  .20 (rest .03) and the LS-optimal scale on the raw fused change is .40: the pattern, not the size, is wrong,
+  so amplitude tuning caps out (~cos^2). Several are stem-specific TFs (PRDM14, SOX2, SALL4) with no
+  cross-line analogue. Top teams' mse .25-.70 imply much better patterns on the strong knockdowns.
