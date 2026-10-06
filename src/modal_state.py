@@ -147,15 +147,25 @@ def train(steps: int = 20000, name: str = "pilot1"):
         "data.kwargs.output_space=gene", "data.kwargs.pert_col=gene", "data.kwargs.cell_type_key=cell_type",
         "data.kwargs.batch_col=gem_group", "data.kwargs.control_pert=non-targeting",
         "data.kwargs.perturbation_features_file=/vol/raw/esm2.pt", "data.kwargs.num_workers=6",
-        f"training.max_steps={steps}", "training.val_freq=2000", "training.ckpt_every_n_steps=5000",
+        f"training.max_steps={steps}", "training.val_freq=2000", "training.ckpt_every_n_steps=10000",
         "model=state_sm", "model.kwargs.hidden_dim=328", "model.kwargs.cell_set_len=64",
         "use_wandb=false", "output_dir=/vol/runs", f"name={name}"], check=True)
     vol.commit()
 
 
 @app.function(image=gpu_img, volumes={"/vol": vol}, gpu="L40S", cpu=8, memory=65536, timeout=2 * 3600)
-def predict(name: str = "pilot1", ckpt: str = "last.ckpt"):
+def predict(name: str = "pilot1", ckpt: str = "last.ckpt", test: str = ""):
+    """test="hepg2": evaluate on another held-out line via a TOML with that line as the zero-shot test split."""
     import subprocess
-    subprocess.run(["state", "tx", "predict", "--output-dir", f"/vol/runs/{name}", "--checkpoint", ckpt,
-                    "--profile", "anndata"], check=True)
+
+    import toml
+    cmd = ["state", "tx", "predict", "--output-dir", f"/vol/runs/{name}", "--checkpoint", ckpt, "--profile", "minimal"]
+    if test:
+        cfg = toml.load("/vol/proc/pilot.toml")
+        cfg["zeroshot"] = {f"{test}.{test}": "test"}
+        path = f"/vol/proc/test_{test}.toml"
+        with open(path, "w") as f:
+            toml.dump(cfg, f)
+        cmd += ["--toml", path]
+    subprocess.run(cmd, check=True)
     vol.commit()

@@ -799,3 +799,7 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   .514, sign_top50 .509 vs ours rmpc5 .108 / .821 / .661. State's own eval: pearson_delta -.001, discrimination
   cosine .513. Predictions vary per target but in random directions (median inter-target cosine .055). Dropped.
   Modal spend for the pilot ~$6-8 (of $30 free credit).
+- State long run (pilot2, 100k planned, stopped at ~65k): HepG2 val loss 4.7 (20k) -> 1.19 (60k), but the best
+  snapshot still discriminates at chance: HepG2 discrimination_l1 .515, pearson_delta .152; H1 .513 / .041.
+  The loss falls by learning the line's shared state, not knockdown-specific responses. Longer training doesn't
+  fix it; stopped to save credit (total Modal ~$12-14 of $30).
