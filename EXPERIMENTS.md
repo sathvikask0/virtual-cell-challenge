@@ -732,3 +732,4 @@ H1 seed1 combo .243283 vs u3b15 .241544, fresh shared-reference verification; pl
   (-.037), fid -.008 (+.003), reach .144 (+.010), jac .002. The boost buys reach/mse but costs fold-change size (nmae),
   exactly H1's pattern (tie, nmae -.032 -> -.051); Jurkat (+.031) overstated it. H1 again is the better board proxy.
   u3b2 (H1 nmae -.077) not uploaded. Idea: keep the boost's p-value effect but undo its fold-change inflation.
+- u3n (u3b15 + cnorm: boost but keep per-target per-cell norm): H1 .241 (tie rmpc5), Jurkat .222. Reach gain vanishes with the inflation. Per-cell amplitude levers exhausted.
