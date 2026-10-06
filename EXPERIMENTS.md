@@ -753,3 +753,9 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   Raw per-target metrics on non-essential targets only (scratch subset.py): H1 u3b15 raises nmae .961 -> .975 (matches
   the board), fid flat; Jurkat u3b2: fid .35 -> .46, reach .40 -> .46, nmae .867 -> .847, but jac .118 -> .030.
   Use the non-essential subset as the board-like proxy from now on.
+- **Option 3 (learned transfer) feasibility, 2026-10-06** (scratch transfer_signal.py): data/lines has 9,526 targets
+  common to K562 GW, HCT116 and HEK293T (X-Atlas). Per-target response correlation between lines (panel-mean removed,
+  5,741 genes expressed in all 3, own gene out): non-essential (DepMap pan-mean > -.3, n=7,168) median r .021
+  (HCT116~HEK293T) / .012 / .011 (with K562); moderately essential .03-.05; essential (< -1) .08-.10. The 2026 panel is
+  ~all non-essential, so cross-line transfer carries almost no signal there: a learned transfer model has little to
+  learn. Explains the plateau of all copy/vote/neural approaches.
