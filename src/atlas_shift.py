@@ -41,6 +41,7 @@ if os.environ.get("ATLAS_K562") == "cpm":  # K562 from the per-cell file (src/k5
     WEIGHTS = {("k562_cpm" if k == "k562" else k): w for k, w in WEIGHTS.items()}
 PRIOR = 1e5
 CTX_PROFILES = {}  # context -> profiles function, overrides `profiles` for that 2026 context
+EXPR_W = None  # (dest cpm over genes_out, gamma): per-gene source weight min(1, 4*(src+1)/(dest+1))**gamma
 CHUNK = 1000
 
 
@@ -109,18 +110,24 @@ def fused(targets, genes_out, exclude=()):
             continue
         c = np.load(OUT / f"{line}.npz")
         rows = {t: i for i, t in enumerate(c["targets"])}
+        gw = 1.0
+        if EXPR_W is not None:
+            z = np.load(ROOT / "data/lines" / f"{line}.npz", allow_pickle=True)
+            sc = dict(zip(z["genes"].astype(str), 1e6 * np.asarray(z["ctrl"], float) / np.sum(z["ctrl"])))
+            src = np.array([sc.get(g, 0.0) for g in genes_out])
+            gw = np.minimum(1.0, 4 * (src + 1) / (EXPR_W[0] + 1)) ** EXPR_W[1]
         for i, t in enumerate(targets):
             if t not in rows:
                 continue
             ec = np.where(cols >= 0, c["ec"][rows[t]][cols], np.nan)
             eb = np.where(cols >= 0, c["eb"][rows[t]][cols], np.nan)
             m = ~np.isnan(ec)
-            num_c[i] += w * np.where(m, ec, 0)
+            num_c[i] += w * gw * np.where(m, ec, 0)
             pos[i] += m & (ec > 0)
             neg[i] += m & (ec < 0)
             nsrc[i] += m
-            num_b[i] += w * np.where(m, eb, 0)
-            den[i] += w * m
+            num_b[i] += w * gw * np.where(m, eb, 0)
+            den[i] += w * gw * m
     with np.errstate(invalid="ignore"):
         ec_f = np.where(den > 0, num_c / den, 0).astype(np.float32)
         eb_f = np.where(den > 0, num_b / den, 0).astype(np.float32)
