@@ -766,3 +766,13 @@ Sanity: Jurkat -> JURKAT .85, HepG2 -> Hep G2 .80, K562 -> K-562 .67, HCT116 -> 
   the real target-specific change ~0 (H1 .004, Jurkat -.013) vs ours .055 / .112. Dead end.
 - Net: ceiling for weak targets is large (split-half .33 vs ours .055 on H1) but no zero-shot source found that carries
   the line-specific part. Option 3 (learned transfer) has nothing to learn from for the 2026 regime.
+
+## 2026-10-06: Bet 2, pretrained models
+- X-Cell (Xaira): weights not released (HF repo README-only). Stack (Arc): in-context, needs perturbed prompt cells.
+- Arc State, st-se-replogle-full/jurkat_0.99 (held-out Jurkat), published predictions (data/state/jurkat_pred.h5ad):
+  head-to-head on 73 targets shared with our Jurkat eval (data/calibration/state_vs_ours.py):
+  ours rmpc5 corr .125 / retrieval .928 / sign_top50 .827; State .154 / .829 / .821. Non-essential (15): ours
+  .117/.927/.807, State .187/.891/.725. Comparable, not a big jump.
+- **All public State Replogle checkpoints use one-hot perturbations over 2,024 essential-screen genes: 0 of the 300
+  2026 targets are in the vocabulary.** Using State for 2026 needs retraining with gene-embedding perturbation
+  features on genome-wide data (K562 GW + X-Atlas): a GPU project, still bounded by weak cross-line transfer.
