@@ -47,3 +47,6 @@ uploaded `rmpc5.vcc` (log: `data/calibration/dry_pipeline.log`). Upload takes ~2
 - Fixes: validator now uses VCC_CONTEXTS / VCC_CTRL_DIR (was hard-coded A/B/C and the A/B/C target list); the pipeline
   stops if validation fails. vcc-cli had to be upgraded 0.2.2 -> 0.3.0 ("cli_upgrade_required"); server now in the final
   phase (defaults to D,E,F).
+- **Uploaded `final_rmpc5` on 2026-10-24: entry opjTZVKBLuiGKo8vkYxu, status published, mode FINAL** (panel
+  vcc2026-test-1). Final scores are hidden until winners are announced. First attempt got HTTP 403 at "creating
+  submission"; an immediate retry went through.
