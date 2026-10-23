@@ -38,3 +38,12 @@ uploaded `rmpc5.vcc` (log: `data/calibration/dry_pipeline.log`). Upload takes ~2
 - Per-context source weights (`D:hct116=20` etc. in `agree_alloc.py`) verified 2026-10-06: a full build with `A:k562=10` validated and changed only context A.
 - Measure the same-line gain locally: e.g. HCT116 as destination is not possible (no local real HCT116 cells), so use
   Jurkat/HepG2 split halves: predict half B from half A of the same line vs from other lines.
+
+## 2026-10-23: final controls released and processed
+- Downloaded `controls-final` (data/vcc/final): contexts D/E/F, same 18,533 genes, 300 targets (129 shared with A/B/C).
+- Identity (DepMap): **D = MOLM-13-like AML** (.89 vs .81, myeloid like K562), **E = U-87 MG glioblastoma** (.82 vs .61),
+  **F = fibroblast/primary-like, ambiguous** (.69 vs .69). None is HCT116/HEK293T/K562, so no same-line source. None stem.
+- Built and validated `data/submissions/final_rmpc5.vcc` (rmpc5 recipe, 0 fallbacks) in ~12 min.
+- Fixes: validator now uses VCC_CONTEXTS / VCC_CTRL_DIR (was hard-coded A/B/C and the A/B/C target list); the pipeline
+  stops if validation fails. vcc-cli had to be upgraded 0.2.2 -> 0.3.0 ("cli_upgrade_required"); server now in the final
+  phase (defaults to D,E,F).

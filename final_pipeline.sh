@@ -16,5 +16,6 @@ echo "== 2. identity (DepMap)"; $PY line_identity.py 2000 $NAMES
 echo "== 3. source caches for this target panel"; $PY atlas_shift.py build
 $PY -c "import atlas_cd4 as C; C.build()"
 echo "== 4. build + validate $NAME"; $PY agree_alloc.py submission $NAME "$@"
-$PY validate_atlas_submission.py $NAME && rm -f ../data/submissions/$NAME.h5ad
+$PY validate_atlas_submission.py $NAME
+rm -f ../data/submissions/$NAME.h5ad
 echo "== done: data/submissions/$NAME.vcc (NOT uploaded; upload needs the user's explicit OK)"
